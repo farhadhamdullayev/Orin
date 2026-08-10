@@ -1,0 +1,176 @@
+import Foundation
+import Observation
+import SwiftData
+
+/// The app's single source of truth: the item deck, the virtual clock, and the
+/// real-acquisition metrics. One store = one unified memory schedule.
+///
+/// Static content (word/gloss/example text) comes from `ContentStore` and is
+/// never persisted. Only the dynamic per-word `ScheduleState` and the
+/// singleton `UserProfile` are written through to SwiftData, and only for
+/// words the learner has actually reviewed (see `VocabProgress`).
+@Observable
+final class LearningStore {
+    private(set) var items: [LearningItem]
+
+    /// Virtual day counter. Advancing it is how the prototype "waits" for
+    /// spaced intervals to come due without real calendar time — this mirrors
+    /// the web app's own `state.virtualDay`/`advanceDay()` production design.
+    private(set) var virtualDay: Int
+
+    // MARK: Real-acquisition metrics (NOT streaks / XP)
+    /// First-attempt recall successes over total first attempts, this session.
+    private(set) var firstAttempts = 0
+    private(set) var firstAttemptSuccesses = 0
+
+    /// Vocabulary the learner starts out knowing (approx. the high-frequency
+    /// function/content words). Coverage is measured against this plus every
+    /// item word they've since recalled at least once.
+    private let baseKnownWords: Set<String>
+
+    private let modelContext: ModelContext
+    private let userProfile: UserProfile
+    private var progressByItemId: [String: VocabProgress]
+
+    init(
+        contentStore: ContentStore,
+        localization: LocalizationStore,
+        modelContext: ModelContext,
+        baseKnownWords: Set<String> = SampleContent.baseKnownWords()
+    ) {
+        self.modelContext = modelContext
+        self.baseKnownWords = baseKnownWords
+
+        var profileDescriptor = FetchDescriptor<UserProfile>()
+        profileDescriptor.fetchLimit = 1
+        if let existing = try? modelContext.fetch(profileDescriptor).first {
+            userProfile = existing
+        } else {
+            let fresh = UserProfile(uiLanguage: localization.currentLang)
+            modelContext.insert(fresh)
+            userProfile = fresh
+        }
+        virtualDay = userProfile.virtualDay
+
+        let progressRows = (try? modelContext.fetch(FetchDescriptor<VocabProgress>())) ?? []
+        // Built as a local first (not `self.progressByItemId`) — referencing an
+        // instance member from inside a closure below would implicitly capture
+        // `self` before all stored properties are initialized, which Swift forbids.
+        let progressLookup = Dictionary(uniqueKeysWithValues: progressRows.map { ($0.itemId, $0) })
+        progressByItemId = progressLookup
+
+        items = contentStore.vocab
+            .sorted { $0.frequencyRank < $1.frequencyRank }
+            .map { vocab in
+                LearningItem(
+                    id: vocab.id,
+                    target: vocab.target,
+                    gloss: vocab.gloss,
+                    exampleTarget: vocab.exampleTarget,
+                    exampleGloss: vocab.exampleGloss,
+                    frequencyRank: vocab.frequencyRank,
+                    schedule: progressLookup[vocab.id]?.schedule ?? ScheduleState()
+                )
+            }
+
+        try? modelContext.save()
+    }
+
+    // MARK: Profile-backed settings
+
+    var uiLanguage: String { userProfile.uiLanguage }
+    var learningGoal: String { userProfile.learningGoal }
+
+    func setUILanguage(_ code: String) {
+        userProfile.uiLanguage = code
+        try? modelContext.save()
+    }
+
+    func setLearningGoal(_ text: String) {
+        userProfile.learningGoal = text
+        try? modelContext.save()
+    }
+
+    // MARK: Derived metrics
+
+    var recallAccuracy: Double {
+        firstAttempts == 0 ? 0 : Double(firstAttemptSuccesses) / Double(firstAttempts)
+    }
+
+    var masteredCount: Int { items.filter(\.isMastered).count }
+
+    /// Items whose spaced interval has come due (or that are brand new).
+    var dueItems: [LearningItem] {
+        items.filter { $0.schedule.isDue }
+    }
+
+    var newItems: [LearningItem] {
+        items.filter { $0.schedule.isNew }
+    }
+
+    // MARK: Coverage / comprehensible-input support (strategy §1.4)
+
+    /// Everything the learner currently "knows": the base vocabulary plus the
+    /// word tokens of any item they've recalled at least once. Grows as they
+    /// study, which in turn unlocks harder graded passages.
+    var knownWords: Set<String> {
+        var known = baseKnownWords
+        for item in items where item.schedule.reps >= 1 {
+            for token in CoverageEngine.tokenize(item.target) { known.insert(token) }
+        }
+        return known
+    }
+
+    /// Honest, rough estimate of known word families for the level readout.
+    /// Anchored at ~1,000 (the assumed base band) plus items learned.
+    var estimatedKnownFamilies: Int {
+        1000 + items.filter { $0.schedule.reps >= 1 }.count
+    }
+
+    /// The graded passage currently best matched to the learner's coverage.
+    var recommendedPassage: ReadingPassage? {
+        CoverageEngine.selectPassage(from: PassageLibrary.all(), known: knownWords)
+    }
+
+    // MARK: Mutations
+
+    /// Grade a retrieval attempt and update both the schedule and the metrics.
+    /// `isFirstAttempt` distinguishes the accuracy-defining first try from
+    /// in-session re-tries after a lapse (which must not pollute accuracy).
+    func grade(_ grade: RecallGrade, for item: LearningItem, isFirstAttempt: Bool) {
+        guard let idx = items.firstIndex(where: { $0.id == item.id }) else { return }
+        let newSchedule = FSRSScheduler.apply(grade, to: items[idx].schedule)
+        items[idx].schedule = newSchedule
+        persistSchedule(itemId: item.id, schedule: newSchedule, createIfMissing: true)
+
+        if isFirstAttempt {
+            firstAttempts += 1
+            if grade.isSuccess { firstAttemptSuccesses += 1 }
+        }
+
+        try? modelContext.save()
+    }
+
+    /// Advance the virtual clock by one day and bring due items forward.
+    func advanceOneDay() {
+        virtualDay += 1
+        userProfile.virtualDay = virtualDay
+        for i in items.indices {
+            items[i].schedule.dueInDays = max(0, items[i].schedule.dueInDays - 1)
+            // Only words already reviewed have a row — advancing the day
+            // never creates progress for words the learner hasn't touched.
+            persistSchedule(itemId: items[i].id, schedule: items[i].schedule, createIfMissing: false)
+        }
+        try? modelContext.save()
+    }
+
+    private func persistSchedule(itemId: String, schedule: ScheduleState, createIfMissing: Bool) {
+        if let existing = progressByItemId[itemId] {
+            existing.schedule = schedule
+        } else if createIfMissing {
+            let row = VocabProgress(itemId: itemId, schedule: schedule)
+            modelContext.insert(row)
+            progressByItemId[itemId] = row
+        }
+    }
+}

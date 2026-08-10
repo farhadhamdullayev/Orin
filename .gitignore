@@ -1,0 +1,19 @@
+# Secrets — never commit
+server/vapid_private.pem
+
+# Server runtime state
+server/orin.db
+server/orin.db-wal
+server/orin.db-shm
+server/__pycache__/
+*.pyc
+
+# Xcode
+ios/**/xcuserdata/
+ios/**/.build/
+ios/**/DerivedData/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+
+# OS
+.DS_Store

@@ -1,0 +1,591 @@
+<title>Orin — Visual Identity</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* Warm-paper neutrals + a single burnt-amber signal. Accent stays sparing;
+       near-black ink carries the primary actions (premium, not gamified). */
+    --ground:   #F6F4EF;
+    --surface:  #FFFFFF;
+    --surface-2:#FBFAF7;
+    --ink:      #1B1A16;
+    --muted:    #6E6B61;
+    --faint:    #94918688;
+    --hair:     #E5E2DA;
+    --accent:   #B26B2E;   /* burnt amber — the signal */
+    --accent-ink:#8F5320;
+    --good:     #4E7A5A;
+    --warn:     #B4863A;
+    --crit:     #B04234;
+    --shadow:   0 1px 2px rgba(27,26,22,.05), 0 8px 30px -12px rgba(27,26,22,.14);
+
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-serif:"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+    --maxw: 1080px;
+    --step--1: clamp(.78rem, .74rem + .2vw, .84rem);
+    --step-0:  clamp(.98rem, .93rem + .25vw, 1.06rem);
+    --step-1:  clamp(1.2rem, 1.1rem + .5vw, 1.45rem);
+    --step-2:  clamp(1.55rem, 1.35rem + 1vw, 2.05rem);
+    --step-3:  clamp(2.1rem, 1.7rem + 2vw, 3.2rem);
+    --step-4:  clamp(2.9rem, 2.1rem + 4vw, 5rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:   #131210;
+      --surface:  #1C1B17;
+      --surface-2:#201E1A;
+      --ink:      #ECE9E1;
+      --muted:    #9B978C;
+      --faint:    #6a675d88;
+      --hair:     #2E2B25;
+      --accent:   #D8934A;
+      --accent-ink:#E7AD6E;
+      --good:     #78A487;
+      --warn:     #D3A863;
+      --crit:     #D3736A;
+      --shadow:   0 1px 2px rgba(0,0,0,.3), 0 12px 34px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground:#F6F4EF; --surface:#FFFFFF; --surface-2:#FBFAF7; --ink:#1B1A16;
+    --muted:#6E6B61; --faint:#94918688; --hair:#E5E2DA; --accent:#B26B2E;
+    --accent-ink:#8F5320; --good:#4E7A5A; --warn:#B4863A; --crit:#B04234;
+    --shadow:0 1px 2px rgba(27,26,22,.05), 0 8px 30px -12px rgba(27,26,22,.14);
+  }
+  :root[data-theme="dark"] {
+    --ground:#131210; --surface:#1C1B17; --surface-2:#201E1A; --ink:#ECE9E1;
+    --muted:#9B978C; --faint:#6a675d88; --hair:#2E2B25; --accent:#D8934A;
+    --accent-ink:#E7AD6E; --good:#78A487; --warn:#D3A863; --crit:#D3736A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 34px -14px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--font-sans); font-size: var(--step-0); line-height: 1.6;
+    -webkit-font-smoothing: antialiased; letter-spacing: -0.005em;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  section { padding: clamp(52px, 8vw, 104px) 0; }
+  h1,h2,h3 { text-wrap: balance; line-height: 1.08; margin: 0; font-weight: 600; }
+  p { margin: 0; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: var(--step--1);
+    text-transform: uppercase; letter-spacing: .18em; color: var(--accent);
+    display: inline-flex; align-items: center; gap: .6em;
+  }
+  .eyebrow::before { content:""; width: 22px; height: 1px; background: var(--accent); opacity:.7; }
+  .muted { color: var(--muted); }
+  .serif { font-family: var(--font-serif); }
+  .mono  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .rule { height:1px; background: var(--hair); border:0; margin:0; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20; backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--ground) 82%, transparent);
+    border-bottom: 1px solid var(--hair);
+  }
+  .topbar .wrap { display:flex; align-items:center; justify-content:space-between; height:60px; }
+  .brandmark { display:flex; align-items:center; gap:11px; font-weight:600; letter-spacing:-.02em; font-size:1.05rem;}
+  .glyph { width:26px; height:26px; flex:0 0 auto; }
+  .topbar nav { display:flex; gap:26px; font-size:var(--step--1); }
+  .topbar nav a { color:var(--muted); text-decoration:none; }
+  .topbar nav a:hover { color:var(--ink); }
+  @media (max-width:680px){ .topbar nav{ display:none; } }
+
+  /* ---------- Hero ---------- */
+  .hero { padding-top: clamp(48px,7vw,92px); position:relative; overflow:hidden; }
+  .hero h1 {
+    font-size: var(--step-4); font-weight: 600; letter-spacing: -0.04em;
+    margin-top: 22px; max-width: 15ch;
+  }
+  .hero h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 500; color: var(--accent); letter-spacing:-.02em;}
+  .lede { font-size: var(--step-1); color: var(--muted); max-width: 44ch; margin-top: 26px; }
+  .hero-curve { width:100%; height:190px; margin-top: 40px; display:block; }
+  .namechips { display:flex; flex-wrap:wrap; gap:10px; margin-top:30px; align-items:center;}
+  .chip {
+    font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.02em;
+    border:1px solid var(--hair); border-radius:999px; padding:7px 14px; color:var(--muted);
+    background:var(--surface);
+  }
+  .chip.primary { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+  .chip.primary b { color: var(--accent); font-weight:600; }
+
+  /* ---------- Generic grid ---------- */
+  .grid { display:grid; gap: 20px; }
+  .cols-2 { grid-template-columns: repeat(2,1fr); }
+  .cols-3 { grid-template-columns: repeat(3,1fr); }
+  @media (max-width:760px){ .cols-2,.cols-3{ grid-template-columns:1fr; } }
+  .card {
+    background: var(--surface); border:1px solid var(--hair); border-radius:16px;
+    padding: 24px; box-shadow: var(--shadow);
+  }
+  .sec-head { display:flex; flex-direction:column; gap:14px; margin-bottom:38px; max-width:52ch;}
+  .sec-head h2 { font-size: var(--step-2); letter-spacing:-.02em; }
+  .sec-head p { color: var(--muted); }
+
+  /* ---------- Color swatches ---------- */
+  .swatches { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; }
+  .sw { border:1px solid var(--hair); border-radius:12px; overflow:hidden; background:var(--surface);}
+  .sw .chipc { height:66px; }
+  .sw .meta { padding:10px 12px; font-family:var(--font-mono); font-size:11px; }
+  .sw .meta b { display:block; font-family:var(--font-sans); font-size:12px; letter-spacing:-.01em; margin-bottom:2px;}
+  .sw .meta span { color:var(--muted); }
+
+  /* ---------- Type specimen ---------- */
+  .specimen { display:flex; flex-direction:column; gap:22px; }
+  .spec-row { display:grid; grid-template-columns: 88px 1fr; gap:20px; align-items:baseline; padding-bottom:20px; border-bottom:1px solid var(--hair);}
+  .spec-row:last-child{ border-bottom:0; }
+  .spec-label { font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.14em; color:var(--muted); }
+  .t-display { font-size: var(--step-3); font-weight:600; letter-spacing:-.035em; }
+  .t-serif { font-family:var(--font-serif); font-size: var(--step-2); font-style:italic; }
+  .t-body { font-size: 1.02rem; max-width: 60ch; color: var(--ink); }
+  .t-data { font-family:var(--font-mono); font-size:1.3rem; font-variant-numeric:tabular-nums; letter-spacing:-.01em;}
+  .t-data small{ color:var(--muted); font-size:.8rem;}
+
+  /* ---------- Phone mockups ---------- */
+  .screens-scroll { display:grid; grid-auto-flow:column; grid-auto-columns: 264px; gap:26px; overflow-x:auto; padding:8px 4px 26px; scroll-snap-type:x mandatory; }
+  .screens-scroll::-webkit-scrollbar{ height:8px; }
+  .screens-scroll::-webkit-scrollbar-thumb{ background:var(--hair); border-radius:8px; }
+  .screencol { scroll-snap-align:start; }
+  .screencap { font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin:14px 2px 0; }
+  .screencap b{ color:var(--ink); font-family:var(--font-sans); letter-spacing:-.01em; text-transform:none; font-size:12.5px; display:block; margin-bottom:2px;}
+
+  .phone {
+    width:264px; height:552px; border-radius:40px; padding:10px;
+    background: linear-gradient(160deg, #2a2822, #17150f);
+    box-shadow: var(--shadow), 0 40px 60px -30px rgba(0,0,0,.4);
+    position:relative;
+  }
+  :root[data-theme="light"] .phone, :root:not([data-theme="dark"]) .phone { background: linear-gradient(160deg,#312e27,#191712); }
+  .screen {
+    position:absolute; inset:10px; border-radius:31px; overflow:hidden;
+    background: var(--app-bg); color: var(--app-ink); display:flex; flex-direction:column;
+    /* App's own light theme — the product ships premium-light by default */
+    --app-bg:#F6F4EF; --app-surf:#FFFFFF; --app-ink:#1B1A16; --app-mut:#6E6B61;
+    --app-hair:#E7E4DC; --app-acc:#B26B2E; --app-good:#4E7A5A; --app-crit:#B04234;
+    font-size:12.5px; line-height:1.45;
+  }
+  .statusbar { display:flex; justify-content:space-between; align-items:center; padding:12px 18px 4px; font-size:11px; font-weight:600; font-family:var(--font-mono);}
+  .statusbar .dots{ display:flex; gap:3px; align-items:center;}
+  .statusbar .dots i{ width:4px;height:4px;border-radius:50%;background:var(--app-ink);opacity:.55; display:inline-block;}
+  .appbody { padding: 8px 18px 18px; display:flex; flex-direction:column; gap:12px; overflow:hidden; flex:1;}
+  .appwordmark{ display:flex; align-items:center; gap:7px; font-weight:600; letter-spacing:-.02em; font-size:14px; }
+  .appwordmark svg{ width:18px; height:18px; }
+  .app-h { font-size:20px; font-weight:600; letter-spacing:-.03em; }
+  .app-sub{ color:var(--app-mut); font-size:11.5px; }
+  .metricgrid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .metric{ background:var(--app-surf); border:1px solid var(--app-hair); border-radius:13px; padding:11px 12px; }
+  .metric .k{ font-family:var(--font-mono); font-size:22px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
+  .metric .k.acc{ color:var(--app-acc); }
+  .metric .k.good{ color:var(--app-good); }
+  .metric .l{ font-size:10.5px; color:var(--app-mut); margin-top:2px; }
+  .appbtn{ background:var(--app-ink); color:var(--app-bg); text-align:center; padding:13px; border-radius:13px; font-weight:600; font-size:13.5px; letter-spacing:-.01em; }
+  .appbtn.ghost{ background:transparent; color:var(--app-ink); border:1px solid var(--app-hair); }
+  .appnote{ font-size:10.5px; color:var(--app-mut); text-align:center; }
+  .covbadge{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11px; padding:5px 10px; border-radius:999px; }
+  .covbadge.support{ background: color-mix(in srgb, var(--app-good) 15%, transparent); color:var(--app-good);}
+  .passage{ background:var(--app-surf); border:1px solid var(--app-hair); border-radius:14px; padding:14px; font-size:14px; line-height:1.62; }
+  .passage u{ color:var(--app-acc); text-decoration:none; border-bottom:1.5px solid color-mix(in srgb,var(--app-acc) 45%, transparent); font-weight:500;}
+  .newwords{ font-size:10.5px; color:var(--app-mut);}
+  .newwords b{ color:var(--app-acc); font-weight:500;}
+  .cue{ background:var(--app-surf); border:1px solid var(--app-hair); border-radius:14px; padding:18px 14px; text-align:center; display:flex; flex-direction:column; gap:10px;}
+  .cue .gloss{ font-size:15px; font-weight:600; }
+  .cue .blank{ color:var(--app-mut); font-size:13px; }
+  .cue .ans{ color:var(--app-acc); font-size:19px; font-weight:600; letter-spacing:-.02em; }
+  .grades{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
+  .grade{ text-align:center; padding:9px 2px; border-radius:10px; font-size:11px; font-weight:600; border:1px solid var(--app-hair); }
+  .grade.g1{ color:var(--app-crit); } .grade.g2{ color:var(--warn);} .grade.g3{ color:var(--app-good);} .grade.g4{ color:var(--app-acc);}
+  .mic{ width:62px;height:62px;border-radius:50%; margin:6px auto; background:var(--app-ink); color:var(--app-bg); display:flex;align-items:center;justify-content:center; }
+  .bar{ height:6px; border-radius:6px; background:var(--app-hair); overflow:hidden;}
+  .bar > i{ display:block; height:100%; background:var(--app-good); }
+  .stab-chart{ height:96px; }
+  .loop-done{ display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px;}
+  .loop-done .tick{ width:22px;height:22px;border-radius:50%; background:var(--app-good); color:#fff; display:flex;align-items:center;justify-content:center; font-size:13px;}
+
+  /* ---------- Principles ---------- */
+  .principle{ display:flex; gap:16px; align-items:flex-start; }
+  .principle .n{ font-family:var(--font-mono); font-size:12px; color:var(--accent); padding-top:3px; min-width:26px; }
+  .principle h3{ font-size:var(--step-1); font-weight:600; letter-spacing:-.02em; margin-bottom:4px;}
+  .principle p{ color:var(--muted); }
+
+  .foot{ padding:40px 0 70px; color:var(--muted); font-size:var(--step--1); border-top:1px solid var(--hair); }
+  .foot .mono{ color:var(--faint); }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brandmark">
+      <svg class="glyph" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="8" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M6 20 C10 20 10 12 14 12 C18 12 18 20 22 20 C25 20 25 15 27 13" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+      orin
+    </div>
+    <nav>
+      <a href="#idea">The idea</a>
+      <a href="#identity">Identity</a>
+      <a href="#screens">Screens</a>
+      <a href="#principles">Principles</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Visual identity · working concept</span>
+      <h1>The language app that measures what you <em>actually know.</em></h1>
+      <p class="lede">A calm, evidence-based counter-proposal to gamified learning. No streaks, no XP — just comprehensible input, honest recall, and memory scheduled by the real forgetting curve.</p>
+
+      <canvas class="hero-curve" id="heroCurve" aria-label="A spaced-repetition memory curve: recall probability decays, then jumps back up at each review, with intervals lengthening over time."></canvas>
+
+      <div class="namechips">
+        <span class="chip primary"><b>Orin</b> — chosen</span>
+        <span class="chip">coined · ownable</span>
+        <span class="chip">availability-screened</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- IDEA -->
+  <section id="idea">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">The idea</span>
+        <h2 class="serif" style="font-style:italic; font-weight:500;">“Duolingo’s problem isn’t its method. It’s what it measures.”</h2>
+        <p>Research is clear that time-in-app doesn’t predict acquisition — accuracy does. So the whole identity is built to feel <b>trustworthy and quiet</b>, the opposite of a slot machine: paper-warm grounds, one restrained amber signal, data set in a precise mono. The name <b>Orin</b> is coined, not descriptive — short, open-vowelled, and calm by design. It doesn’t announce what the app does; the product does that. Chosen to be genuinely <em>ownable</em>.</p>
+      </div>
+      <div class="grid cols-3">
+        <div class="card">
+          <div class="eyebrow" style="color:var(--good)">Honest</div>
+          <p style="margin-top:12px">Every metric reflects real knowledge — recall accuracy, mastered items, vocabulary coverage. Never a streak.</p>
+        </div>
+        <div class="card">
+          <div class="eyebrow" style="color:var(--good)">Grounded</div>
+          <p style="margin-top:12px">Comprehensible input at 95–98% coverage, retrieval practice, FSRS scheduling. Each claim traces to a citation.</p>
+        </div>
+        <div class="card">
+          <div class="eyebrow" style="color:var(--good)">Calm</div>
+          <p style="margin-top:12px">No confetti, no pressure loops. The interface gets out of the way so the learning is the reward.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- IDENTITY -->
+  <section id="identity">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Identity system</span>
+        <h2>A mark, a palette, and a voice — kept deliberately spare.</h2>
+        <p>The logo is the forgetting curve itself, boxed: memory that decays and is rescued by review. Boldness is spent in exactly one place — the amber signal — and everything around it stays monochrome.</p>
+      </div>
+
+      <div class="grid cols-2" style="margin-bottom:22px">
+        <div class="card" style="display:flex; gap:26px; align-items:center; justify-content:center; flex-wrap:wrap;">
+          <svg width="132" height="132" viewBox="0 0 32 32" fill="none" aria-label="Orin logo">
+            <rect x="1" y="1" width="30" height="30" rx="8" stroke="var(--accent)" stroke-width="1.4"/>
+            <path d="M6 20 C10 20 10 12 14 12 C18 12 18 20 22 20 C25 20 25 15 27 13" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+          <div>
+            <div style="font-size:2.1rem; font-weight:600; letter-spacing:-.045em;">orin</div>
+            <div class="mono" style="color:var(--muted); font-size:12px; margin-top:6px; letter-spacing:.02em;">wordmark · lowercase · −4.5% tracking</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="spec-label" style="margin-bottom:14px">Typography</div>
+          <div class="specimen" style="gap:16px">
+            <div class="spec-row" style="grid-template-columns:70px 1fr; padding-bottom:14px">
+              <span class="spec-label">UI</span>
+              <span class="t-display" style="font-size:1.7rem">Grotesque, tight</span>
+            </div>
+            <div class="spec-row" style="grid-template-columns:70px 1fr; padding-bottom:14px">
+              <span class="spec-label">Voice</span>
+              <span class="t-serif" style="font-size:1.4rem">an editorial serif</span>
+            </div>
+            <div class="spec-row" style="grid-template-columns:70px 1fr; padding-bottom:0">
+              <span class="spec-label">Data</span>
+              <span class="t-data">0.92 <small>PCC</small> · 95% · S=39d</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="spec-label" style="margin-bottom:14px">Palette</div>
+        <div class="swatches">
+          <div class="sw"><div class="chipc" style="background:#1B1A16"></div><div class="meta"><b>Ink</b><span>#1B1A16</span></div></div>
+          <div class="sw"><div class="chipc" style="background:#F6F4EF"></div><div class="meta"><b>Paper</b><span>#F6F4EF</span></div></div>
+          <div class="sw"><div class="chipc" style="background:#B26B2E"></div><div class="meta"><b>Amber · signal</b><span>#B26B2E</span></div></div>
+          <div class="sw"><div class="chipc" style="background:#6E6B61"></div><div class="meta"><b>Muted</b><span>#6E6B61</span></div></div>
+          <div class="sw"><div class="chipc" style="background:#4E7A5A"></div><div class="meta"><b>Good · semantic</b><span>#4E7A5A</span></div></div>
+          <div class="sw"><div class="chipc" style="background:#B04234"></div><div class="meta"><b>Critical · semantic</b><span>#B04234</span></div></div>
+        </div>
+        <p class="muted" style="font-size:var(--step--1); margin-top:16px">Semantic colours (good / critical) are kept separate from the amber accent, and used only to encode comprehension bands and recall grades — never for decoration.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- SCREENS -->
+  <section id="screens">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">The product</span>
+        <h2>One learning loop, five moments.</h2>
+        <p>Read at your level → recall from memory → say it aloud → let the schedule do the spacing. The chrome is English (the global product); a learner’s own language appears only as translation glosses.</p>
+      </div>
+
+      <div class="screens-scroll">
+
+        <!-- 1 TODAY -->
+        <div class="screencol">
+          <div class="phone"><div class="screen">
+            <div class="statusbar"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+            <div class="appbody">
+              <div class="appwordmark">
+                <svg viewBox="0 0 32 32" fill="none"><rect x="1.5" y="1.5" width="29" height="29" rx="8" stroke="var(--app-acc)" stroke-width="1.6"/><path d="M6 20 C10 20 10 12 14 12 C18 12 18 20 22 20 C25 20 25 15 27 13" stroke="var(--app-ink)" stroke-width="2.2" stroke-linecap="round"/></svg>
+                orin
+              </div>
+              <div style="margin-top:4px">
+                <div class="app-h">Today</div>
+                <div class="app-sub">What you actually know</div>
+              </div>
+              <div class="metricgrid">
+                <div class="metric"><div class="k acc">92%</div><div class="l">Recall accuracy</div></div>
+                <div class="metric"><div class="k good">14</div><div class="l">Mastered</div></div>
+                <div class="metric"><div class="k">~1,240</div><div class="l">Vocabulary (est.)</div></div>
+                <div class="metric"><div class="k">6</div><div class="l">Due for review</div></div>
+              </div>
+              <div style="display:flex; align-items:center; gap:7px; font-size:11px; color:var(--app-mut)">
+                <span class="covbadge support">96% · reading zone</span>
+              </div>
+              <div style="flex:1"></div>
+              <div class="appbtn">Start session</div>
+              <div class="appnote">No streaks. No XP. Just what you know.</div>
+            </div>
+          </div></div>
+          <div class="screencap"><b>Today</b>Real-acquisition metrics</div>
+        </div>
+
+        <!-- 2 READ -->
+        <div class="screencol">
+          <div class="phone"><div class="screen">
+            <div class="statusbar"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+            <div class="appbody">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div><div class="app-h" style="font-size:17px">Fixing the plan</div><div class="app-sub">Read · level band 3</div></div>
+                <span class="covbadge support">96%</span>
+              </div>
+              <div class="passage">
+                We could not <u>figure out</u> why the schedule kept changing. Although everyone arrived on time, the meeting was delayed again. Eventually we agreed to keep the plan simple and <u>flexible</u>.
+              </div>
+              <div class="newwords">New words (2): <b>figure out · flexible</b></div>
+              <div class="appbtn ghost" style="display:flex; align-items:center; justify-content:center; gap:8px;">▶  Listen</div>
+              <div style="flex:1"></div>
+              <div class="appnote" style="text-align:left">95–98% coverage = the learning zone. New words are catchable from context.</div>
+              <div class="appbtn">Continue</div>
+            </div>
+          </div></div>
+          <div class="screencap"><b>Read</b>Coverage-graded input</div>
+        </div>
+
+        <!-- 3 RECALL -->
+        <div class="screencol">
+          <div class="phone"><div class="screen">
+            <div class="statusbar"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+            <div class="appbody">
+              <div class="app-sub" style="text-transform:uppercase; letter-spacing:.12em; font-size:10px; font-family:var(--font-mono)">Recall · 3 of 4</div>
+              <div style="flex:.5"></div>
+              <div class="cue">
+                <div class="gloss">as soon as</div>
+                <div class="blank">“Call me ____ you arrive.”</div>
+                <hr class="rule" style="width:60%; margin:2px auto; background:var(--app-hair)">
+                <div class="ans">as soon as</div>
+              </div>
+              <div style="flex:1"></div>
+              <div class="app-sub" style="text-align:center; font-size:10.5px">How well did you recall it?</div>
+              <div class="grades">
+                <div class="grade g1">Again</div>
+                <div class="grade g2">Hard</div>
+                <div class="grade g3">Good</div>
+                <div class="grade g4">Easy</div>
+              </div>
+            </div>
+          </div></div>
+          <div class="screencap"><b>Recall</b>Active retrieval, self-graded</div>
+        </div>
+
+        <!-- 4 SPEAK -->
+        <div class="screencol">
+          <div class="phone"><div class="screen">
+            <div class="statusbar"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+            <div class="appbody">
+              <div class="app-sub" style="text-transform:uppercase; letter-spacing:.12em; font-size:10px; font-family:var(--font-mono)">Speak · shadowing</div>
+              <div class="passage" style="text-align:center; font-size:15px; font-weight:500">“Call me as soon as you arrive.”</div>
+              <div class="appbtn ghost" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:9px">▶  Model audio</div>
+              <div style="flex:.6"></div>
+              <div class="mic" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></svg>
+              </div>
+              <div class="bar"><i style="width:90%"></i></div>
+              <div class="appnote" style="text-align:left">90% of words recognised — <b style="color:var(--app-ink)">an intelligibility signal, not a pronunciation grade.</b> On-device transcription can’t score stress or intonation reliably.</div>
+              <div style="flex:1"></div>
+              <div class="appbtn">Next</div>
+            </div>
+          </div></div>
+          <div class="screencap"><b>Speak</b>Output — honest feedback</div>
+        </div>
+
+        <!-- 5 REVIEW -->
+        <div class="screencol">
+          <div class="phone"><div class="screen">
+            <div class="statusbar"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+            <div class="appbody">
+              <div class="loop-done"><span class="tick">✓</span> Loop complete</div>
+              <div class="app-sub">Memory scheduled by stability, not guesswork.</div>
+              <canvas id="stabChart" class="stab-chart" aria-label="Rising memory-stability curve across reviews"></canvas>
+              <div class="metricgrid">
+                <div class="metric"><div class="k" style="font-size:19px">S=39d</div><div class="l">Stability now</div></div>
+                <div class="metric"><div class="k acc" style="font-size:19px">9 days</div><div class="l">Next review</div></div>
+              </div>
+              <div style="flex:1"></div>
+              <div class="appbtn ghost">Advance a day →</div>
+              <div class="appnote">FSRS · scheduled at 90% target retention</div>
+            </div>
+          </div></div>
+          <div class="screencap"><b>Review</b>FSRS spacing, real signals</div>
+        </div>
+
+      </div>
+      <p class="muted" style="font-size:var(--step--1); margin-top:6px">↔ Scroll to see the full loop. Screens mirror the working SwiftUI prototype.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- PRINCIPLES -->
+  <section id="principles">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Design principles</span>
+        <h2>Rules the interface has to keep.</h2>
+      </div>
+      <div class="grid cols-2">
+        <div class="principle"><span class="n">01</span><div><h3>Measure knowledge, not habit</h3><p>Accuracy, mastery, and coverage are surfaced. Streaks and XP are structurally absent — they measure habit, not learning.</p></div></div>
+        <div class="principle"><span class="n">02</span><div><h3>One signal, quietly</h3><p>Amber marks exactly one thing at a time — an unknown word, an answer, a due item. Everything else stays monochrome.</p></div></div>
+        <div class="principle"><span class="n">03</span><div><h3>Honest about the machine</h3><p>Automated speech feedback is framed as approximate guidance. The app never fakes a precision it doesn’t have.</p></div></div>
+        <div class="principle"><span class="n">04</span><div><h3>Calm over compulsion</h3><p>No dark patterns, no manufactured urgency. Sessions end cleanly. The learning is the reward.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div style="display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+        <div>
+          <div class="brandmark" style="font-size:1rem; margin-bottom:8px;">
+            <svg class="glyph" viewBox="0 0 32 32" fill="none"><rect x="1.5" y="1.5" width="29" height="29" rx="8" stroke="var(--accent)" stroke-width="1.5"/><path d="M6 20 C10 20 10 12 14 12 C18 12 18 20 22 20 C25 20 25 15 27 13" stroke="var(--ink)" stroke-width="2"/></svg>
+            orin
+          </div>
+          <div>Visual identity concept — for review, not final.</div>
+        </div>
+        <div class="mono" style="text-align:right; line-height:1.9">
+          Grounded in 4 research rounds<br>
+          Name: Orin — coined, availability-screened<br>
+          Accent #B26B2E · Ink #1B1A16
+        </div>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script>
+  // Signature motif: the spaced-repetition memory curve. Recall probability
+  // decays along a power-law, then snaps back to 100% at each review — with
+  // intervals lengthening as stability grows. Drawn to the accent colour.
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  function drawHero(){
+    const c = document.getElementById('heroCurve'); if(!c) return;
+    const dpr = Math.min(window.devicePixelRatio||1, 2);
+    const w = c.clientWidth, h = c.clientHeight;
+    c.width = w*dpr; c.height = h*dpr;
+    const x = c.getContext('2d'); x.scale(dpr,dpr);
+    x.clearRect(0,0,w,h);
+    const ink = css('--ink'), acc = css('--accent'), hair = css('--hair'), mut = css('--muted');
+    const baseY = h-26, top = 20;
+    // baseline
+    x.strokeStyle = hair; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(0, baseY); x.lineTo(w, baseY); x.stroke();
+    // reviews at lengthening intervals
+    const reviews = [0.06, 0.16, 0.33, 0.60, 0.98];
+    const decay = t => Math.pow(1 + (19/81)*t, -0.5); // R at normalized elapsed t
+    x.lineWidth = 2.4; x.strokeStyle = acc; x.lineJoin='round';
+    x.beginPath();
+    for(let i=0;i<reviews.length-1;i++){
+      const x0 = reviews[i]*w, x1 = reviews[i+1]*w;
+      const span = x1 - x0;
+      // draw decay from full (top) down toward baseline across the interval
+      const steps = 34;
+      for(let s=0;s<=steps;s++){
+        const f = s/steps;
+        const R = decay(f*3.2);                 // 3.2 = how far it decays before next review
+        const px = x0 + f*span;
+        const py = top + (1-R)*(baseY-top);
+        if(i===0 && s===0) x.moveTo(px,py); else x.lineTo(px,py);
+      }
+      // vertical snap back up at the review point
+      x.lineTo(x1, top);
+    }
+    x.stroke();
+    // review dots + ticks
+    for(let i=0;i<reviews.length;i++){
+      const px = reviews[i]*w;
+      x.fillStyle = ink;
+      x.beginPath(); x.arc(px, top, 3, 0, 7); x.fill();
+    }
+    // label
+    x.fillStyle = mut; x.font = "11px ui-monospace, Menlo, monospace";
+    x.fillText("recall probability", 2, top-6);
+    x.fillText("time →", w-46, baseY+18);
+  }
+
+  function drawStab(){
+    const c = document.getElementById('stabChart'); if(!c) return;
+    const dpr = Math.min(window.devicePixelRatio||1, 2);
+    const w = c.clientWidth, h = c.clientHeight;
+    c.width=w*dpr; c.height=h*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr);
+    x.clearRect(0,0,w,h);
+    const acc = css('--app-acc')||'#B26B2E', hair=css('--app-hair')||'#E7E4DC', good=css('--app-good')||'#4E7A5A';
+    const pts = [ [0,.86],[.22,.66],[.44,.4],[.68,.2],[1,.06] ]; // stability rising => y lower = higher
+    // area
+    x.strokeStyle=hair; x.lineWidth=1;
+    for(let g=0; g<=3; g++){ const yy=h*g/3; x.beginPath(); x.moveTo(0,yy); x.lineTo(w,yy); x.stroke(); }
+    x.beginPath();
+    pts.forEach((p,i)=>{ const px=p[0]*w, py=6+p[1]*(h-12); i?x.lineTo(px,py):x.moveTo(px,py);});
+    x.strokeStyle=good; x.lineWidth=2.4; x.lineJoin='round'; x.stroke();
+    // endpoint emphasis
+    const last=pts[pts.length-1]; const ex=last[0]*w-3, ey=6+last[1]*(h-12);
+    x.fillStyle=acc; x.beginPath(); x.arc(ex,ey,4,0,7); x.fill();
+    pts.forEach(p=>{ x.fillStyle=good; x.beginPath(); x.arc(p[0]*w, 6+p[1]*(h-12), 2.4,0,7); x.fill(); });
+  }
+
+  function redraw(){ drawHero(); drawStab(); }
+  redraw();
+  window.addEventListener('resize', redraw);
+  // redraw on theme flips
+  new MutationObserver(redraw).observe(document.documentElement,{attributes:true, attributeFilter:['data-theme']});
+  if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
+</script>
