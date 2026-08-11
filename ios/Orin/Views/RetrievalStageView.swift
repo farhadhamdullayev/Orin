@@ -75,17 +75,17 @@ struct RetrievalStageView: View {
 
     private var gradeButtons: some View {
         HStack(spacing: 10) {
-            ForEach(RecallGrade.allCases) { grade in
+            ForEach(RecallGrade.allCases) { option in
                 Button {
-                    grade(grade)
+                    grade(option)
                 } label: {
-                    Text(grade.label)
+                    Text(option.label)
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
                 .buttonStyle(.bordered)
-                .tint(color(for: grade))
+                .tint(color(for: option))
             }
         }
         .padding(.horizontal)

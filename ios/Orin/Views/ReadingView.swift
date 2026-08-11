@@ -69,16 +69,16 @@ struct ReadingView: View {
     /// Render the passage word-by-word, tinting words not in the known set.
     private var highlightedText: Text {
         // Split on spaces but keep words; punctuation stays attached for display.
-        passage.text
-            .split(separator: " ", omittingEmptySubsequences: true)
-            .reduce(Text("")) { acc, raw in
-                let display = String(raw)
-                let normalized = CoverageEngine.tokenize(display).first ?? ""
-                let isKnown = normalized.isEmpty || known.contains(normalized)
-                let piece = Text(display + " ")
-                    .foregroundColor(isKnown ? .primary : .orange)
-                return acc + piece
-            }
+        var result = AttributedString()
+        for raw in passage.text.split(separator: " ", omittingEmptySubsequences: true) {
+            let display = String(raw)
+            let normalized = CoverageEngine.tokenize(display).first ?? ""
+            let isKnown = normalized.isEmpty || known.contains(normalized)
+            var piece = AttributedString(display + " ")
+            piece.foregroundColor = isKnown ? Color.primary : Color.orange
+            result.append(piece)
+        }
+        return Text(result)
     }
 
     private var explanation: String {
