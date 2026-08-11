@@ -10,6 +10,11 @@ struct OrinTabView: View {
                 .tabItem { Label("Öyrən", systemImage: "book.fill") }
 
             NavigationStack {
+                PracticeHubView()
+            }
+            .tabItem { Label("Məşq", systemImage: "square.grid.2x2.fill") }
+
+            NavigationStack {
                 ScrollView {
                     MetricsDashboardView()
                         .padding(.top)

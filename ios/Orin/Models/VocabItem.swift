@@ -20,23 +20,32 @@ struct VocabItem: Identifiable, Codable, Equatable {
 @Observable
 final class ContentStore {
     private(set) var vocab: [VocabItem]
+    private(set) var grammar: [GrammarTopic]
+    private(set) var listening: [ListeningTopic]
+    private(set) var visualVocab: [VisualCategory]
 
     init() {
-        vocab = Self.loadVocab()
+        vocab = ContentStore.loadJSON("vocab", as: [VocabItem].self) ?? []
+        grammar = ContentStore.loadGrammar()
+        listening = ContentStore.loadListening()
+        visualVocab = ContentStore.loadVisualVocab()
     }
 
-    private static func loadVocab() -> [VocabItem] {
-        guard let url = Bundle.main.url(forResource: "vocab", withExtension: "json", subdirectory: "Content")
-            ?? Bundle.main.url(forResource: "vocab", withExtension: "json") else {
-            assertionFailure("vocab.json not found in the app bundle — add Resources/Content/vocab.json to the Xcode target.")
-            return []
+    /// Decodes `<name>.json` from the bundle, checking the `Content`
+    /// subdirectory first (folder-reference add) and falling back to the
+    /// bundle root (group add) — see README's Xcode setup step for context.
+    static func loadJSON<T: Decodable>(_ name: String, as type: T.Type) -> T? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "json", subdirectory: "Content")
+            ?? Bundle.main.url(forResource: name, withExtension: "json") else {
+            assertionFailure("\(name).json not found in the app bundle — add Resources/Content/\(name).json to the Xcode target.")
+            return nil
         }
         do {
             let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode([VocabItem].self, from: data)
+            return try JSONDecoder().decode(T.self, from: data)
         } catch {
-            assertionFailure("Failed to decode vocab.json: \(error)")
-            return []
+            assertionFailure("Failed to decode \(name).json: \(error)")
+            return nil
         }
     }
 }
