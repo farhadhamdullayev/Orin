@@ -119,13 +119,15 @@ struct GrammarPracticeView: View {
             }
 
             Spacer()
-
-            if selected != nil {
-                Button("Növbəti") { advance() }
-                    .buttonStyle(.borderedProminent)
-            }
         }
         .padding(.bottom)
+        .onChange(of: selected) { _, newValue in
+            guard newValue != nil else { return }
+            Task {
+                try? await Task.sleep(for: .seconds(1.1))
+                advance()
+            }
+        }
         .navigationTitle("\(drillIndex + 1) / \(topic.drills.count)")
         .navigationBarTitleDisplayMode(.inline)
     }

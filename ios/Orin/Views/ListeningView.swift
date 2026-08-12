@@ -88,16 +88,18 @@ struct ListeningPracticeView: View {
                 }
 
                 Spacer()
-
-                if selected != nil {
-                    Button("Növbəti") { advance() }
-                        .buttonStyle(.borderedProminent)
-                }
             }
             .padding(.bottom)
             .navigationTitle("\(itemIndex + 1) / \(topic.items.count)")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear { Speaker.shared.speak(item.english) }
+            .onChange(of: selected) { _, newValue in
+                guard newValue != nil else { return }
+                Task {
+                    try? await Task.sleep(for: .seconds(1.5))
+                    advance()
+                }
+            }
         } else {
             resultView
         }
