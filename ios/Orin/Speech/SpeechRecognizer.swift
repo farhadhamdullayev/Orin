@@ -82,6 +82,9 @@ final class SpeechRecognizer {
         task?.cancel()
         request = nil
         task = nil
+        // `.record` (set in start()) has no playback route — restore a
+        // category that allows audio output so Speaker (TTS) isn't left mute.
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
     }
 
     /// A crude, honest intelligibility proxy: word-overlap between target and

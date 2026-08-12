@@ -47,6 +47,7 @@ struct VisualCategoryView: View {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(category.items) { item in
                     Button {
+                        Speaker.shared.speak(item.word)
                         if revealed.contains(item.id) { revealed.remove(item.id) }
                         else { revealed.insert(item.id) }
                     } label: {

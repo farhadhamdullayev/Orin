@@ -8,6 +8,15 @@ final class Speaker {
     private let synth = AVSpeechSynthesizer()
 
     func speak(_ text: String, rate: Float = AVSpeechUtteranceDefaultSpeechRate * 0.9) {
+        // SpeechRecognizer (Output/shadowing stage) switches the shared
+        // AVAudioSession to `.record` while listening and never restores it —
+        // `.record` has no playback route, so TTS goes silently mute afterward.
+        // Force a playback-compatible category before every utterance so this
+        // works regardless of what the recognizer left the session in.
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .default, options: [])
+        try? session.setActive(true, options: [])
+
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         utterance.rate = rate
