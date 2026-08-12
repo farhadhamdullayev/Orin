@@ -158,7 +158,7 @@ struct GrammarPracticeView: View {
 
                 VStack(spacing: 0) {
                     ForEach(Array(topic.drills.enumerated()), id: \.offset) { i, drill in
-                        GrammarResultRow(drill: drill, pickedIndex: picks[i])
+                        GrammarResultRow(drill: drill, pickedIndex: picks[i], rule: strippingTags(topic.note))
                         if i < topic.drills.count - 1 { Divider() }
                     }
                 }
@@ -212,6 +212,10 @@ struct GrammarPracticeView: View {
 private struct GrammarResultRow: View {
     let drill: GrammarDrill
     let pickedIndex: Int
+    /// The topic's grammar-rule explanation (`GrammarTopic.note`, HTML tags
+    /// already stripped by the caller) — repeated here so a mistake is
+    /// explained by the *rule*, not just "you picked X, correct is Y".
+    let rule: String
     @State private var expanded = false
 
     private var isCorrect: Bool { pickedIndex == drill.correctIndex }
@@ -252,6 +256,17 @@ private struct GrammarResultRow: View {
                              : "Düzgün cavab: \(drill.options[drill.correctIndex])")
                             .font(.caption)
                             .foregroundStyle(.red)
+
+                        Divider().padding(.vertical, 2)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Qayda")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                            Text(rule)
+                                .font(.caption)
+                                .foregroundStyle(.primary)
+                        }
                     }
                 }
                 .padding(.leading, 26)
