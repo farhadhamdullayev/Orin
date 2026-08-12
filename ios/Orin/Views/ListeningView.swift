@@ -31,7 +31,9 @@ struct ListeningPracticeView: View {
     @State private var topicIndex: Int
     @State private var itemIndex = 0
     @State private var selected: String?
-    @State private var results: [Bool] = []
+    /// The option string the learner picked for each item, in order — drives
+    /// both the score and the tap-to-explain result rows ("" = skipped).
+    @State private var picks: [String] = []
 
     init(topics: [ListeningTopic], startIndex: Int) {
         self.topics = topics
@@ -109,33 +111,28 @@ struct ListeningPracticeView: View {
     }
 
     private func advance() {
-        results.append(selected == topic.items[itemIndex].correctAnswer)
+        picks.append(selected ?? "")
         selected = nil
         itemIndex += 1
         if itemIndex < topic.items.count { Speaker.shared.speak(topic.items[itemIndex].english) }
     }
 
     private var resultView: some View {
-        ScrollView {
+        let correctCount = zip(picks, topic.items).filter { $0 == $1.correctAnswer }.count
+        return ScrollView {
             VStack(spacing: 20) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 48))
                     .foregroundStyle(.green)
-                Text("\(results.filter { $0 }.count) / \(results.count) düzgün")
+                Text("\(correctCount) / \(picks.count) düzgün")
                     .font(.title2.bold())
+                Text("Nəticələrə toxunub izahı görə bilərsiniz")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 VStack(spacing: 0) {
                     ForEach(Array(topic.items.enumerated()), id: \.offset) { i, listeningItem in
-                        HStack(spacing: 10) {
-                            Image(systemName: results[i] ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(results[i] ? .green : .red)
-                            Text(listeningItem.question)
-                                .font(.caption)
-                                .lineLimit(2)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                        }
-                        .padding(.vertical, 8)
+                        ListeningResultRow(item: listeningItem, picked: picks[i])
                         if i < topic.items.count - 1 { Divider() }
                     }
                 }
@@ -166,13 +163,66 @@ struct ListeningPracticeView: View {
     private func restartSameTopic() {
         itemIndex = 0
         selected = nil
-        results = []
+        picks = []
     }
 
     private func goToNextTopic() {
         topicIndex += 1
         itemIndex = 0
         selected = nil
-        results = []
+        picks = []
+    }
+}
+
+/// One tappable result row — expands to show the English sentence, its
+/// Azerbaijani translation, and (when wrong) what the learner picked vs the
+/// right answer, so a mistake always comes with a concrete "why".
+private struct ListeningResultRow: View {
+    let item: ListeningItem
+    let picked: String
+    @State private var expanded = false
+
+    private var isCorrect: Bool { picked == item.correctAnswer }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation { expanded.toggle() }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .foregroundStyle(isCorrect ? .green : .red)
+                    Text(item.question)
+                        .font(.caption)
+                        .lineLimit(expanded ? nil : 2)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(item.english)
+                        .font(.callout.weight(.semibold))
+                    Text(item.gloss)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if !isCorrect {
+                        Text(picked.isEmpty
+                             ? "Düzgün cavab: \(item.correctAnswer)"
+                             : "Sizin cavabınız: \(picked) — düzgünü: \(item.correctAnswer)")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .padding(.leading, 26)
+                .transition(.opacity)
+            }
+        }
+        .padding(.vertical, 8)
     }
 }

@@ -34,7 +34,9 @@ struct GrammarPracticeView: View {
     @State private var drillIndex = 0
     @State private var showIntro = true
     @State private var selected: Int?
-    @State private var results: [Bool] = []
+    /// Which option index the learner picked for each drill, in order —
+    /// drives both the score and the tap-to-explain result rows.
+    @State private var picks: [Int] = []
 
     init(topics: [GrammarTopic], startIndex: Int) {
         self.topics = topics
@@ -136,32 +138,27 @@ struct GrammarPracticeView: View {
     }
 
     private func advance() {
-        results.append(selected == topic.drills[drillIndex].correctIndex)
+        picks.append(selected ?? -1)
         selected = nil
         drillIndex += 1
     }
 
     private var resultView: some View {
-        ScrollView {
+        let correctCount = zip(picks, topic.drills).filter { $0 == $1.correctIndex }.count
+        return ScrollView {
             VStack(spacing: 20) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 48))
                     .foregroundStyle(.green)
-                Text("\(results.filter { $0 }.count) / \(results.count) düzgün")
+                Text("\(correctCount) / \(picks.count) düzgün")
                     .font(.title2.bold())
+                Text("Nəticələrə toxunub izahı görə bilərsiniz")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 VStack(spacing: 0) {
                     ForEach(Array(topic.drills.enumerated()), id: \.offset) { i, drill in
-                        HStack(spacing: 10) {
-                            Image(systemName: results[i] ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(results[i] ? .green : .red)
-                            Text(drill.question)
-                                .font(.caption)
-                                .lineLimit(2)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                        }
-                        .padding(.vertical, 8)
+                        GrammarResultRow(drill: drill, pickedIndex: picks[i])
                         if i < topic.drills.count - 1 { Divider() }
                     }
                 }
@@ -192,7 +189,7 @@ struct GrammarPracticeView: View {
     private func restartSameTopic() {
         drillIndex = 0
         selected = nil
-        results = []
+        picks = []
         showIntro = true
     }
 
@@ -200,11 +197,67 @@ struct GrammarPracticeView: View {
         topicIndex += 1
         drillIndex = 0
         selected = nil
-        results = []
+        picks = []
         showIntro = true
     }
 
     private func strippingTags(_ s: String) -> String {
         s.replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
+    }
+}
+
+/// One tappable result row — expands to show the corrected sentence, its
+/// Azerbaijani translation, and (when wrong) what the learner picked vs the
+/// right answer, so a mistake always comes with a concrete "why".
+private struct GrammarResultRow: View {
+    let drill: GrammarDrill
+    let pickedIndex: Int
+    @State private var expanded = false
+
+    private var isCorrect: Bool { pickedIndex == drill.correctIndex }
+    private var correctedSentence: String {
+        drill.question.replacingOccurrences(of: "___", with: drill.options[drill.correctIndex])
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation { expanded.toggle() }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .foregroundStyle(isCorrect ? .green : .red)
+                    Text(drill.question)
+                        .font(.caption)
+                        .lineLimit(expanded ? nil : 2)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(correctedSentence)
+                        .font(.callout.weight(.semibold))
+                    Text(drill.gloss)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if !isCorrect {
+                        Text(pickedIndex >= 0 && pickedIndex < drill.options.count
+                             ? "Sizin cavabınız: \(drill.options[pickedIndex]) — düzgünü: \(drill.options[drill.correctIndex])"
+                             : "Düzgün cavab: \(drill.options[drill.correctIndex])")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .padding(.leading, 26)
+                .transition(.opacity)
+            }
+        }
+        .padding(.vertical, 8)
     }
 }
