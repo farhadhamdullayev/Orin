@@ -6,9 +6,9 @@ struct ListeningView: View {
     @Environment(ContentStore.self) private var contentStore
 
     var body: some View {
-        List(contentStore.listening) { topic in
+        List(Array(contentStore.listening.enumerated()), id: \.element.id) { i, topic in
             NavigationLink {
-                ListeningPracticeView(topic: topic)
+                ListeningPracticeView(topics: contentStore.listening, startIndex: i)
             } label: {
                 HStack {
                     Text(topic.icon)
@@ -24,14 +24,24 @@ struct ListeningView: View {
     }
 }
 
+/// Same in-place "retry" / "next topic" pattern as `GrammarPracticeView` —
+/// see that file for the rationale.
 struct ListeningPracticeView: View {
-    let topic: ListeningTopic
-    @State private var index = 0
+    let topics: [ListeningTopic]
+    @State private var topicIndex: Int
+    @State private var itemIndex = 0
     @State private var selected: String?
-    @State private var correctCount = 0
+    @State private var results: [Bool] = []
 
+    init(topics: [ListeningTopic], startIndex: Int) {
+        self.topics = topics
+        _topicIndex = State(initialValue: startIndex)
+    }
+
+    private var topic: ListeningTopic { topics[topicIndex] }
+    private var hasNextTopic: Bool { topicIndex < topics.count - 1 }
     private var item: ListeningItem? {
-        index < topic.items.count ? topic.items[index] : nil
+        itemIndex < topic.items.count ? topic.items[itemIndex] : nil
     }
 
     var body: some View {
@@ -83,19 +93,11 @@ struct ListeningPracticeView: View {
                 }
             }
             .padding(.bottom)
-            .navigationTitle("\(index + 1) / \(topic.items.count)")
+            .navigationTitle("\(itemIndex + 1) / \(topic.items.count)")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear { Speaker.shared.speak(item.english) }
         } else {
-            VStack(spacing: 16) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.green)
-                Text("\(correctCount) / \(topic.items.count) düzgün")
-                    .font(.title2.bold())
-            }
-            .navigationTitle("Nəticə")
-            .navigationBarTitleDisplayMode(.inline)
+            resultView
         }
     }
 
@@ -107,9 +109,70 @@ struct ListeningPracticeView: View {
     }
 
     private func advance() {
-        if selected == topic.items[index].correctAnswer { correctCount += 1 }
+        results.append(selected == topic.items[itemIndex].correctAnswer)
         selected = nil
-        index += 1
-        if index < topic.items.count { Speaker.shared.speak(topic.items[index].english) }
+        itemIndex += 1
+        if itemIndex < topic.items.count { Speaker.shared.speak(topic.items[itemIndex].english) }
+    }
+
+    private var resultView: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.green)
+                Text("\(results.filter { $0 }.count) / \(results.count) düzgün")
+                    .font(.title2.bold())
+
+                VStack(spacing: 0) {
+                    ForEach(Array(topic.items.enumerated()), id: \.offset) { i, listeningItem in
+                        HStack(spacing: 10) {
+                            Image(systemName: results[i] ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundStyle(results[i] ? .green : .red)
+                            Text(listeningItem.question)
+                                .font(.caption)
+                                .lineLimit(2)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                        }
+                        .padding(.vertical, 8)
+                        if i < topic.items.count - 1 { Divider() }
+                    }
+                }
+                .padding()
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+
+                VStack(spacing: 12) {
+                    if hasNextTopic {
+                        Button {
+                            goToNextTopic()
+                        } label: {
+                            Label("Növbəti mövzu", systemImage: "arrow.right.circle.fill")
+                                .frame(maxWidth: .infinity).padding()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button("Bu mövzunu təkrar et") { restartSameTopic() }
+                        .buttonStyle(.bordered)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Nəticə")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func restartSameTopic() {
+        itemIndex = 0
+        selected = nil
+        results = []
+    }
+
+    private func goToNextTopic() {
+        topicIndex += 1
+        itemIndex = 0
+        selected = nil
+        results = []
     }
 }

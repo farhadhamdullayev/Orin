@@ -7,9 +7,9 @@ struct GrammarView: View {
     @Environment(ContentStore.self) private var contentStore
 
     var body: some View {
-        List(contentStore.grammar) { topic in
+        List(Array(contentStore.grammar.enumerated()), id: \.element.id) { i, topic in
             NavigationLink {
-                GrammarPracticeView(topic: topic)
+                GrammarPracticeView(topics: contentStore.grammar, startIndex: i)
             } label: {
                 HStack {
                     Text(topic.icon)
@@ -25,19 +25,30 @@ struct GrammarView: View {
     }
 }
 
-/// Runs the drill batch for one topic: note + examples, then an MCQ loop.
+/// Runs the drill batch for one topic: note + examples, then an MCQ loop,
+/// then a per-question result table with in-place "retry" / "next topic"
+/// actions — no need to back out to the topic list between lessons.
 struct GrammarPracticeView: View {
-    let topic: GrammarTopic
-    @State private var index = 0
+    let topics: [GrammarTopic]
+    @State private var topicIndex: Int
+    @State private var drillIndex = 0
     @State private var showIntro = true
     @State private var selected: Int?
-    @State private var correctCount = 0
+    @State private var results: [Bool] = []
+
+    init(topics: [GrammarTopic], startIndex: Int) {
+        self.topics = topics
+        _topicIndex = State(initialValue: startIndex)
+    }
+
+    private var topic: GrammarTopic { topics[topicIndex] }
+    private var hasNextTopic: Bool { topicIndex < topics.count - 1 }
 
     var body: some View {
         if showIntro {
             introView
-        } else if index < topic.drills.count {
-            drillView(topic.drills[index])
+        } else if drillIndex < topic.drills.count {
+            drillView(topic.drills[drillIndex])
         } else {
             resultView
         }
@@ -113,7 +124,7 @@ struct GrammarPracticeView: View {
             }
         }
         .padding(.bottom)
-        .navigationTitle("\(index + 1) / \(topic.drills.count)")
+        .navigationTitle("\(drillIndex + 1) / \(topic.drills.count)")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -125,21 +136,72 @@ struct GrammarPracticeView: View {
     }
 
     private func advance() {
-        if selected == topic.drills[index].correctIndex { correctCount += 1 }
+        results.append(selected == topic.drills[drillIndex].correctIndex)
         selected = nil
-        index += 1
+        drillIndex += 1
     }
 
     private var resultView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.green)
-            Text("\(correctCount) / \(topic.drills.count) düzgün")
-                .font(.title2.bold())
+        ScrollView {
+            VStack(spacing: 20) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.green)
+                Text("\(results.filter { $0 }.count) / \(results.count) düzgün")
+                    .font(.title2.bold())
+
+                VStack(spacing: 0) {
+                    ForEach(Array(topic.drills.enumerated()), id: \.offset) { i, drill in
+                        HStack(spacing: 10) {
+                            Image(systemName: results[i] ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundStyle(results[i] ? .green : .red)
+                            Text(drill.question)
+                                .font(.caption)
+                                .lineLimit(2)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                        }
+                        .padding(.vertical, 8)
+                        if i < topic.drills.count - 1 { Divider() }
+                    }
+                }
+                .padding()
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+
+                VStack(spacing: 12) {
+                    if hasNextTopic {
+                        Button {
+                            goToNextTopic()
+                        } label: {
+                            Label("Növbəti mövzu", systemImage: "arrow.right.circle.fill")
+                                .frame(maxWidth: .infinity).padding()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button("Bu mövzunu təkrar et") { restartSameTopic() }
+                        .buttonStyle(.bordered)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding()
         }
         .navigationTitle("Nəticə")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func restartSameTopic() {
+        drillIndex = 0
+        selected = nil
+        results = []
+        showIntro = true
+    }
+
+    private func goToNextTopic() {
+        topicIndex += 1
+        drillIndex = 0
+        selected = nil
+        results = []
+        showIntro = true
     }
 
     private func strippingTags(_ s: String) -> String {
