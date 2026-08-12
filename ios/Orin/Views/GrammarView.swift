@@ -25,17 +25,22 @@ struct GrammarView: View {
     }
 }
 
-/// Runs the drill batch for one topic: note + examples, then an MCQ loop,
-/// then a per-question result table with in-place "retry" / "next topic"
-/// actions — no need to back out to the topic list between lessons.
+/// Runs the drill batch for one topic: note + examples, then an MCQ loop
+/// over `practiceQueue` (the full topic, or — after a "retry mistakes"
+/// choice — just the drills answered wrong), then a mistakes-only result
+/// list with in-place "retry" / "next topic" actions.
 struct GrammarPracticeView: View {
     let topics: [GrammarTopic]
     @State private var topicIndex: Int
     @State private var drillIndex = 0
     @State private var showIntro = true
     @State private var selected: Int?
-    /// Which option index the learner picked for each drill, in order —
-    /// drives both the score and the tap-to-explain result rows.
+    /// The drills being worked through this pass — either `topic.drills` or,
+    /// after "Səhvlərin təkrarı", just the ones answered wrong last time.
+    @State private var practiceQueue: [GrammarDrill] = []
+    /// Which option index the learner picked for each entry in
+    /// `practiceQueue`, in order — drives both the score and the
+    /// tap-to-explain result rows.
     @State private var picks: [Int] = []
 
     init(topics: [GrammarTopic], startIndex: Int) {
@@ -45,12 +50,17 @@ struct GrammarPracticeView: View {
 
     private var topic: GrammarTopic { topics[topicIndex] }
     private var hasNextTopic: Bool { topicIndex < topics.count - 1 }
+    private var wrongEntries: [(index: Int, drill: GrammarDrill)] {
+        Array(zip(picks, practiceQueue).enumerated()).compactMap { i, pair in
+            pair.0 != pair.1.correctIndex ? (i, pair.1) : nil
+        }
+    }
 
     var body: some View {
         if showIntro {
             introView
-        } else if drillIndex < topic.drills.count {
-            drillView(topic.drills[drillIndex])
+        } else if drillIndex < practiceQueue.count {
+            drillView(practiceQueue[drillIndex])
         } else {
             resultView
         }
@@ -74,6 +84,9 @@ struct GrammarPracticeView: View {
                 }
 
                 Button {
+                    practiceQueue = topic.drills
+                    picks = []
+                    drillIndex = 0
                     showIntro = false
                 } label: {
                     Text(topic.drills.isEmpty ? "Drill yoxdur" : "Məşqə başla")
@@ -128,7 +141,7 @@ struct GrammarPracticeView: View {
                 advance()
             }
         }
-        .navigationTitle("\(drillIndex + 1) / \(topic.drills.count)")
+        .navigationTitle("\(drillIndex + 1) / \(practiceQueue.count)")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -146,26 +159,33 @@ struct GrammarPracticeView: View {
     }
 
     private var resultView: some View {
-        let correctCount = zip(picks, topic.drills).filter { $0 == $1.correctIndex }.count
+        let correctCount = picks.count - wrongEntries.count
         return ScrollView {
             VStack(spacing: 20) {
-                Image(systemName: "checkmark.circle.fill")
+                Image(systemName: wrongEntries.isEmpty ? "star.circle.fill" : "checkmark.circle.fill")
                     .font(.system(size: 48))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(wrongEntries.isEmpty ? .yellow : .green)
                 Text("\(correctCount) / \(picks.count) düzgün")
                     .font(.title2.bold())
-                Text("Nəticələrə toxunub izahı görə bilərsiniz")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
 
-                VStack(spacing: 0) {
-                    ForEach(Array(topic.drills.enumerated()), id: \.offset) { i, drill in
-                        GrammarResultRow(drill: drill, pickedIndex: picks[i], rule: strippingTags(topic.note))
-                        if i < topic.drills.count - 1 { Divider() }
+                if wrongEntries.isEmpty {
+                    Text("Hamısı düzgün! 🎉")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Səhv cavablar — toxunub izahı görə bilərsiniz")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    VStack(spacing: 0) {
+                        ForEach(Array(wrongEntries.enumerated()), id: \.offset) { row, entry in
+                            GrammarResultRow(drill: entry.drill, pickedIndex: picks[entry.index], rule: strippingTags(topic.note))
+                            if row < wrongEntries.count - 1 { Divider() }
+                        }
                     }
+                    .padding()
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
-                .padding()
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
 
                 VStack(spacing: 12) {
                     if hasNextTopic {
@@ -177,7 +197,16 @@ struct GrammarPracticeView: View {
                         }
                         .buttonStyle(.borderedProminent)
                     }
-                    Button("Bu mövzunu təkrar et") { restartSameTopic() }
+                    if !wrongEntries.isEmpty {
+                        Button {
+                            retryMistakesOnly()
+                        } label: {
+                            Label("Səhvlərin təkrarı", systemImage: "arrow.counterclockwise")
+                                .frame(maxWidth: .infinity).padding()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    Button("Tam mövzunun təkrarı") { restartSameTopic() }
                         .buttonStyle(.bordered)
                         .frame(maxWidth: .infinity)
                 }
@@ -188,7 +217,16 @@ struct GrammarPracticeView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    private func retryMistakesOnly() {
+        practiceQueue = wrongEntries.map(\.drill)
+        drillIndex = 0
+        selected = nil
+        picks = []
+        showIntro = false
+    }
+
     private func restartSameTopic() {
+        practiceQueue = topic.drills
         drillIndex = 0
         selected = nil
         picks = []
@@ -197,6 +235,7 @@ struct GrammarPracticeView: View {
 
     private func goToNextTopic() {
         topicIndex += 1
+        practiceQueue = topic.drills
         drillIndex = 0
         selected = nil
         picks = []
@@ -209,18 +248,14 @@ struct GrammarPracticeView: View {
 }
 
 /// One tappable result row — expands to show the corrected sentence, its
-/// Azerbaijani translation, and (when wrong) what the learner picked vs the
-/// right answer, so a mistake always comes with a concrete "why".
+/// Azerbaijani translation, what the learner picked vs the right answer,
+/// and the topic's grammar rule, so a mistake always comes with a concrete "why".
 private struct GrammarResultRow: View {
     let drill: GrammarDrill
     let pickedIndex: Int
-    /// The topic's grammar-rule explanation (`GrammarTopic.note`, HTML tags
-    /// already stripped by the caller) — repeated here so a mistake is
-    /// explained by the *rule*, not just "you picked X, correct is Y".
     let rule: String
     @State private var expanded = false
 
-    private var isCorrect: Bool { pickedIndex == drill.correctIndex }
     private var correctedSentence: String {
         drill.question.replacingOccurrences(of: "___", with: drill.options[drill.correctIndex])
     }
@@ -231,8 +266,8 @@ private struct GrammarResultRow: View {
                 withAnimation { expanded.toggle() }
             } label: {
                 HStack(spacing: 10) {
-                    Image(systemName: isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(isCorrect ? .green : .red)
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.red)
                     Text(drill.question)
                         .font(.caption)
                         .lineLimit(expanded ? nil : 2)
@@ -252,23 +287,21 @@ private struct GrammarResultRow: View {
                     Text(drill.gloss)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    if !isCorrect {
-                        Text(pickedIndex >= 0 && pickedIndex < drill.options.count
-                             ? "Sizin cavabınız: \(drill.options[pickedIndex]) — düzgünü: \(drill.options[drill.correctIndex])"
-                             : "Düzgün cavab: \(drill.options[drill.correctIndex])")
+                    Text(pickedIndex >= 0 && pickedIndex < drill.options.count
+                         ? "Sizin cavabınız: \(drill.options[pickedIndex]) — düzgünü: \(drill.options[drill.correctIndex])"
+                         : "Düzgün cavab: \(drill.options[drill.correctIndex])")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+
+                    Divider().padding(.vertical, 2)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Qayda")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                        Text(rule)
                             .font(.caption)
-                            .foregroundStyle(.red)
-
-                        Divider().padding(.vertical, 2)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Qayda")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                            Text(rule)
-                                .font(.caption)
-                                .foregroundStyle(.primary)
-                        }
+                            .foregroundStyle(.primary)
                     }
                 }
                 .padding(.leading, 26)
