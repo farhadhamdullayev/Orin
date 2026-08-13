@@ -46,42 +46,59 @@ Bu server Windows-dur, ona görə kod burada kompilyasiya olunmayıb. Mac-də:
 Orin/
 ├── OrinApp.swift                # Giriş nöqtəsi: SwiftData container + store-lar + tab kökü
 ├── Models/
-│   ├── LearningItem.swift       # Runtime vahid (məzmun+schedule) + RecallGrade
-│   ├── VocabItem.swift          # Statik JSON-content struct + ContentStore (bundle-dan yüklənir)
+│   ├── LearningItem.swift       # Runtime vahid (məzmun+schedule+awl) + RecallGrade
+│   ├── VocabItem.swift          # Statik JSON-content struct(lar) + ContentStore (bundle-dan yüklənir)
+│   ├── GrammarContent.swift     # GrammarTopic/GrammarDrill
+│   ├── ListeningContent.swift   # ListeningTopic/ListeningItem
+│   ├── VisualVocabContent.swift # VisualCategory/VisualVocabItem
+│   ├── WritingPrompt.swift      # WritingPrompt
 │   ├── LocalizationStore.swift  # Aktiv lüğət dili + tərcümə-dict həll etmə
 │   ├── FSRSScheduler.swift      # Sadiq (sadələşdirilmiş) FSRS-4.5 / DSR modeli
 │   ├── LearningStore.swift      # @Observable — vahid mənbə + metriklər + SwiftData persistensiyası
 │   ├── CoverageEngine.swift     # Lexical coverage + passage seçimi (95/98%)
-│   ├── ReadingPassage.swift     # Graded reader kitabxanası (hələ nümunə, Faza 3-də əvəzlənəcək)
+│   ├── ReadingPassage.swift     # JSON-content struct, reading.json-dan (1200 mətn)
 │   └── SampleContent.swift      # base known vocabulary (FSRS "artıq bilinən sözlər" bazası)
 ├── Persistence/
 │   ├── VocabProgress.swift      # @Model — hər sözün FSRS vəziyyəti (yalnız baxılmış sözlər)
-│   └── UserProfile.swift        # @Model — tək sətir: xal/streak/virtualDay/dil/hədəf
+│   └── UserProfile.swift        # @Model — tək sətir: xal/streak/virtualDay/dil/hədəf/imtahan-hədəfi
 ├── Resources/Content/
-│   └── vocab.json               # export_ios_content.py çıxışı — 3828 söz, 9 dil
+│   ├── vocab.json               # 3871 söz (AWL daxil), 9 dil
+│   ├── grammar.json             # 63 mövzu, 2058 drill (AZ-yalnız)
+│   ├── listening.json           # 93 mövzu, 2754 element (AZ-yalnız)
+│   ├── visual_vocab.json        # 101 kateqoriya, 6370 element (AZ-yalnız)
+│   ├── reading.json             # 1200 graded-reader mətni (İngiliscə)
+│   └── writing_prompts.json     # 120 yazı tapşırığı (AZ-yalnız)
 ├── ViewModels/
-│   └── SessionViewModel.swift   # Bir döngə keçidini idarə edir
+│   └── SessionViewModel.swift   # Bir döngə keçidini idarə edir (awlOnly filtri ilə)
 ├── Speech/
 │   ├── SpeechRecognizer.swift   # On-device ASR (Output mərhələsi)
-│   └── Speaker.swift            # TTS (Input mərhələsi)
+│   └── Speaker.swift            # TTS — hər çağırışdan əvvəl audio session-u özü .playback-ə keçirir
 └── Views/
-    ├── OrinTabView.swift        # Kök: Öyrən/İrəliləyiş/Ayarlar tab-ları
-    ├── ContentView.swift        # "Öyrən" tab: ana səhifə + mərhələ zolağı
+    ├── OrinTabView.swift        # Kök: Öyrən/Məşq/İrəliləyiş/Ayarlar tab-ları
+    ├── ContentView.swift        # "Öyrən" tab: ana səhifə + mərhələ zolağı (SessionContainerView burda, AWL də paylaşır)
     ├── SettingsView.swift       # Dil seçimi + hədəf
-    ├── ReadingView.swift        # Coverage-graded reader (naməlum sözlər işıqlanır)
+    ├── PracticeHubView.swift    # "Məşq" tab: Qrammatika/Dinləmə/Vizual/Oxu/Yazı/AWL/İmtahan kartları
+    ├── GrammarView.swift        # practiceQueue pattern: səhv-yalnız nəticə, "səhvlərin təkrarı"/"tam təkrar"
+    ├── ListeningView.swift      # eyni pattern, + audio
+    ├── VisualVocabView.swift    # kateqoriya-grid, toxunanda söz səsli deyilir
+    ├── ReadingLibraryView.swift # 1200 mətn, coverage-a görə sıralı
+    ├── WritingView.swift        # tapşırıq + sərbəst mətn + qayda-əsaslı geri-bildirim
+    ├── AWLPracticeView.swift    # Lüğət döngəsi, AWL-filtrli
+    ├── ExamPrepView.swift       # Hədəf (IELTS/TOEFL) + tövsiyə
+    ├── ReadingView.swift        # Coverage-graded reader render (tək mətn, naməlum sözlər işıqlanır)
     ├── InputStageView.swift
     ├── RetrievalStageView.swift
     ├── OutputStageView.swift
     └── MetricsDashboardView.swift  # Metriklər + Nəticə ekranı
 ```
 
-Məzmun yeniləmə: `Orin/tools/export_ios_content.py` (Windows-da işlədilir, `PythonEmbed312\python.exe export_ios_content.py`) `web/index.html`-dən CONTENT + 8 LP.<lang>.vocab paketini çıxarıb `vocab.json`-u yenidən yazır — söz sayı/tərcümə dəyişəndə təkrar işlət və Xcode-da faylı yenilə.
+Məzmun yeniləmə: `Orin/tools/export_ios_content.py` (Windows-da işlədilir, `PythonEmbed312\python.exe export_ios_content.py`) `web/index.html`-dən CONTENT+AWL_WORDS+8 LP.<lang>.vocab paketini, GRAMMAR-ı, LISTENING-i, PICSETS-i, PASSAGES-i, WRITING_PROMPTS-ı çıxarıb bütün `Resources/Content/*.json` fayllarını yenidən yazır — məzmun dəyişəndə təkrar işlət və Xcode-da faylları yenilə (`cp -R` iş axını ilə avtomatik, bax əsas README/memory qeydləri).
 
 ## Bilərəkdən sadələşdirilmiş (növbəti fazalar — bax layihə planı)
 
 - **Virtual saat:** əsl tarixlər yox, "gün" sayğacı — bu, DEMO qısaltması deyil, **veb appın özünün production dizaynı** ilə eynidir (`state.virtualDay`/`advanceDay()`, bax `01-STRATEGY.md` §7) — qəsdən dəyişdirilməyib.
 - **Planlayıcı:** FSRS-4.5 struktur sadiqdir, amma default çəkilərlə (data üzərində refit yox) — production-da `ts-fsrs`/`py-fsrs` istifadə et, desired-retention istifadəçiyə açıq knob kimi.
-- **Məzmun:** yalnız Lüğət (vocab) tam miqyaslıdır (3828 söz, 9 dil, persistensiya ilə). Qrammatika/Dinləmə/Vizual/Oxu/Yazı/AWL/İmtahan hazırlığı və Duel/Dostlar/Lider-bord/Push hələ Faza 2-5-dədir (bax `C:\Users\hamdfav\.claude\plans\mossy-tinkering-dove.md`).
+- **Məzmun:** Faza 0-3 bitib — Lüğət (AWL daxil), Qrammatika, Dinləmə, Vizual lüğət, Oxu, Yazı, İmtahan-hazırlığı (marşrutlaşdırma) hamısı hazırdır. Qrammatika/Dinləmə/Vizual/Yazı/İmtahan-hazırlığı sessiya-daxili (cross-launch saxlanmır) — veb-in özündə də bu tiplər üçün FSRS yoxdur. Duel/Dostlar/Lider-bord/Push hələ Faza 4-5-dədir (VPS lazımdır, bax `C:\Users\hamdfav\.claude\plans\mossy-tinkering-dove.md`).
 - **ASR balı:** söz-üstüstədüşmə (crude). Real appda daha yaxşı tələffüz modeli, amma **həmişə "təxmini" çərçivədə** (araşdırma: avtomatik qiymətləndirmə hələ insan səviyyəsində deyil).
 - **Davamlılıq (persistence):** SwiftData ilə əlavə olundu (yalnız `VocabProgress`+`UserProfile` — statik məzmun heç vaxt yazılmır).
 

@@ -16,6 +16,11 @@ final class UserProfile {
     var milestonesSeen: [String]
     var pointsAtDayStart: Int
     var streakAtDayStart: Int
+    /// "" = no exam goal set. Kept free-text ("IELTS"/"TOEFL"/custom) rather
+    /// than an enum since this is just a routing hint for ExamPrepView, not
+    /// content the app validates or unlocks anything on.
+    var examType: String
+    var examTarget: String
 
     init(
         displayName: String = "",
@@ -27,7 +32,9 @@ final class UserProfile {
         learningGoal: String = "",
         milestonesSeen: [String] = [],
         pointsAtDayStart: Int = 0,
-        streakAtDayStart: Int = 0
+        streakAtDayStart: Int = 0,
+        examType: String = "",
+        examTarget: String = ""
     ) {
         self.displayName = displayName
         self.deviceId = deviceId
@@ -39,5 +46,7 @@ final class UserProfile {
         self.milestonesSeen = milestonesSeen
         self.pointsAtDayStart = pointsAtDayStart
         self.streakAtDayStart = streakAtDayStart
+        self.examType = examType
+        self.examTarget = examTarget
     }
 }

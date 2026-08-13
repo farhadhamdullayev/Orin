@@ -16,7 +16,7 @@ struct ReadingView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(passage.title).font(.headline)
-                    Text("Səviyyə bandı \(passage.band)").font(.caption).foregroundStyle(.secondary)
+                    Text("\(passage.wordCount) söz").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 coverageBadge

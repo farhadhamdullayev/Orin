@@ -44,6 +44,50 @@ struct PracticeHubView: View {
                         tint: .orange
                     )
                 }
+
+                NavigationLink {
+                    ReadingLibraryView()
+                } label: {
+                    ModuleCard(
+                        icon: "text.book.closed.fill",
+                        title: "Oxu",
+                        subtitle: "\(contentStore.reading.count) mətn",
+                        tint: .teal
+                    )
+                }
+
+                NavigationLink {
+                    WritingView()
+                } label: {
+                    ModuleCard(
+                        icon: "pencil.line",
+                        title: "Yazı",
+                        subtitle: "\(contentStore.writingPrompts.count) tapşırıq",
+                        tint: .pink
+                    )
+                }
+
+                NavigationLink {
+                    AWLPracticeView()
+                } label: {
+                    ModuleCard(
+                        icon: "graduationcap.fill",
+                        title: "AWL (Akademik lüğət)",
+                        subtitle: "\(contentStore.vocab.filter(\.awl).count) söz",
+                        tint: .indigo
+                    )
+                }
+
+                NavigationLink {
+                    ExamPrepView()
+                } label: {
+                    ModuleCard(
+                        icon: "flag.checkered",
+                        title: "İmtahan hazırlığı",
+                        subtitle: "IELTS / TOEFL — hazırlıq planı",
+                        tint: .green
+                    )
+                }
             }
             .padding()
         }

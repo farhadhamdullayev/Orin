@@ -2,14 +2,16 @@
 Content export for the native iOS rebuild (see the approved plan at
 project root memory / plan file "Orin native iOS app").
 
-Phase 0/1 (vocab): extracts the vocabulary catalog (CONTENT + the 8
-non-Azerbaijani LP.<lang>.vocab override packs) out of Orin/web/index.html
-and writes vocab.json with one VocabItem-shaped record per word:
+Phase 0/1 (vocab): extracts the vocabulary catalog (CONTENT + AWL_WORDS +
+the 8 non-Azerbaijani LP.<lang>.vocab override packs) out of
+Orin/web/index.html and writes vocab.json with one VocabItem-shaped record
+per word:
 
     {"id": "i_because", "target": "because", "frequencyRank": 40,
      "exampleTarget": "I stayed home because it was raining.",
      "gloss": {"az": "...", "hi": "...", ...9 languages...},
-     "exampleGloss": {"az": "...", "hi": "...", ...9 languages...}}
+     "exampleGloss": {"az": "...", "hi": "...", ...9 languages...},
+     "awl": false}
 
 Azerbaijani is the *native* language baked directly into CONTENT; the other
 8 languages live in sparse LP.<lang>.vocab[id]={g,e} override packs and fall
@@ -27,6 +29,10 @@ plain Azerbaijani text accordingly (no per-language dict) to match actual
 current behaviour; if the web app gains translations for these later, this
 script and the Swift models should both grow a `[lang:String]` dict the same
 way vocab.json already has.
+
+Phase 3 (reading/writing): extracts PASSAGES and WRITING_PROMPTS. Same
+Azerbaijani-only reasoning as grammar/listening/visual for the prompt text;
+passage bodies are English-only (no translation needed to read them).
 
 Usage:
     PythonEmbed312\\python.exe export_ios_content.py [path-to-index.html]
@@ -137,41 +143,55 @@ TUPLE_RE = re.compile(
 )
 
 
-def word_id(english_word: str) -> str:
-    return "i_" + re.sub(r"[^a-zA-Z]", "", english_word).lower()
+def word_id(english_word: str, prefix: str = "i_") -> str:
+    return prefix + re.sub(r"[^a-zA-Z]", "", english_word).lower()
 
 
-def extract_content(html: str):
-    marker = "const CONTENT=["
+def _extract_tuples(html: str, marker: str, id_prefix: str, awl: bool):
     start = html.index(marker)
     open_idx = start + len(marker) - 1
     close_idx = find_match(html, open_idx)
     chunk = html[open_idx : close_idx + 1]
 
     items = []
-    seen_ids = set()
-    dupes = 0
     for m in TUPLE_RE.finditer(chunk):
         english, gloss_az, ex_en, exg_az, rank_s = m.groups()
-        wid = word_id(english)
-        if wid in seen_ids:
-            dupes += 1
-            continue
-        seen_ids.add(wid)
         items.append(
             {
-                "id": wid,
+                "id": word_id(english, id_prefix),
                 "target": english,
                 "frequencyRank": int(rank_s),
                 "exampleTarget": ex_en,
                 "gloss": {"az": gloss_az},
                 "exampleGloss": {"az": exg_az},
+                "awl": awl,
             }
         )
-    if dupes:
-        print(f"  NOTE: skipped {dupes} duplicate-id CONTENT entries (kept first occurrence of each).")
-    items.sort(key=lambda it: it["frequencyRank"])
     return items
+
+
+def extract_content(html: str):
+    """CONTENT + AWL_WORDS, merged and sorted exactly like the web app does at
+    runtime (`AWL_WORDS.forEach(a=>CONTENT.push({...,awl:true})); CONTENT.sort(...)`,
+    index.html ~line 6478-6479) — AWL words are full vocab items, just flagged,
+    not a separate catalog. Missing this merge would silently drop ~200 AWL
+    words from the exported deck."""
+    items = _extract_tuples(html, "const CONTENT=[", "i_", awl=False)
+    items += _extract_tuples(html, "const AWL_WORDS=[", "a_", awl=True)
+
+    deduped = []
+    seen_ids = set()
+    dupes = 0
+    for it in items:
+        if it["id"] in seen_ids:
+            dupes += 1
+            continue
+        seen_ids.add(it["id"])
+        deduped.append(it)
+    if dupes:
+        print(f"  NOTE: skipped {dupes} duplicate-id CONTENT/AWL entries (kept first occurrence of each).")
+    deduped.sort(key=lambda it: it["frequencyRank"])
+    return deduped
 
 
 VOCAB_ENTRY_RE = re.compile(
@@ -377,6 +397,62 @@ def extract_picsets(html: str):
     return categories
 
 
+PASSAGE_RE = re.compile(r'\["((?:[^"\\]|\\.)*)",(\d+),"((?:[^"\\]|\\.)*)"\]')
+
+
+def extract_reading(html: str):
+    """PASSAGES: [title, band, text] triples. `band` is unused at runtime on
+    the web (only the dynamic coverage() computation matters — verified this
+    session) — dropped here too; `wordCount` is computed instead, useful for
+    the native CoverageEngine/UI without re-tokenizing every render."""
+    marker = "const PASSAGES=["
+    start = html.index(marker)
+    open_idx = start + len(marker) - 1
+    close_idx = find_match(html, open_idx)
+    chunk = html[open_idx : close_idx + 1]
+
+    passages = []
+    for i, m in enumerate(PASSAGE_RE.finditer(chunk)):
+        title, _band, text = m.groups()
+        passages.append(
+            {
+                "id": f"p_{i}",
+                "title": title,
+                "text": text,
+                "wordCount": len(text.split()),
+            }
+        )
+    return passages
+
+
+WRITING_PROMPT_RE = re.compile(
+    r'\{id:"((?:[^"\\]|\\.)*)",lvl:"((?:[^"\\]|\\.)*)",kind:"((?:[^"\\]|\\.)*)",'
+    r'prompt:"((?:[^"\\]|\\.)*)",min:(\d+)\}'
+)
+
+
+def extract_writing_prompts(html: str):
+    marker = "const WRITING_PROMPTS=["
+    start = html.index(marker)
+    open_idx = start + len(marker) - 1
+    close_idx = find_match(html, open_idx)
+    chunk = html[open_idx : close_idx + 1]
+
+    prompts = []
+    for m in WRITING_PROMPT_RE.finditer(chunk):
+        pid, lvl, kind, prompt, min_words = m.groups()
+        prompts.append(
+            {
+                "id": pid,
+                "level": lvl,
+                "kind": kind,
+                "prompt": prompt,
+                "minWords": int(min_words),
+            }
+        )
+    return prompts
+
+
 def write_json(name: str, data):
     os.makedirs(OUT_DIR, exist_ok=True)
     path = os.path.join(OUT_DIR, name)
@@ -394,7 +470,8 @@ def main():
 
     print("== vocab.json ==")
     items = extract_content(html)
-    print(f"Parsed {len(items)} CONTENT words.")
+    awl_count = sum(1 for it in items if it["awl"])
+    print(f"Parsed {len(items)} CONTENT+AWL words ({awl_count} AWL-flagged).")
     if len(items) < 100:
         raise SystemExit(f"Sanity check failed: only {len(items)} words parsed (expected thousands) — aborting.")
 
@@ -444,6 +521,20 @@ def main():
     if len(visual) < 5 or total_visual_items < 50:
         raise SystemExit(f"Sanity check failed: only {len(visual)} categories / {total_visual_items} items parsed — aborting.")
     write_json("visual_vocab.json", visual)
+
+    print("== reading.json ==")
+    reading = extract_reading(html)
+    print(f"Parsed {len(reading)} reading passages.")
+    if len(reading) < 100:
+        raise SystemExit(f"Sanity check failed: only {len(reading)} passages parsed (expected ~1200) — aborting.")
+    write_json("reading.json", reading)
+
+    print("== writing_prompts.json ==")
+    writing = extract_writing_prompts(html)
+    print(f"Parsed {len(writing)} writing prompts.")
+    if len(writing) < 20:
+        raise SystemExit(f"Sanity check failed: only {len(writing)} prompts parsed (expected ~120) — aborting.")
+    write_json("writing_prompts.json", writing)
 
     print("Content export complete.")
 

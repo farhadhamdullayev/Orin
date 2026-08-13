@@ -67,7 +67,8 @@ private struct HomeView: View {
 }
 
 /// Hosts the current stage and a progress header across the four stages.
-private struct SessionContainerView: View {
+/// Not `private` — reused by `AWLPracticeView` for the AWL-only track.
+struct SessionContainerView: View {
     @Environment(LearningStore.self) private var store
     @Bindable var session: SessionViewModel
     let onFinish: () -> Void

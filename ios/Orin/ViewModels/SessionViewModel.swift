@@ -32,11 +32,15 @@ final class SessionViewModel {
 
     var stage: LoopStage = .input
 
-    init(store: LearningStore, batchSize: Int = 4) {
+    /// `awlOnly`: restricts the batch to Academic Word List items, for the
+    /// dedicated AWL practice track — same loop, same schedule, just a
+    /// filtered source deck.
+    init(store: LearningStore, batchSize: Int = 4, awlOnly: Bool = false) {
         self.store = store
         // Prioritise due items, then fill with new ones — spaced review first.
-        let due = store.dueItems
-        let fresh = store.newItems.filter { item in !due.contains(where: { $0.id == item.id }) }
+        let due = awlOnly ? store.awlDueItems : store.dueItems
+        let fresh = (awlOnly ? store.awlNewItems : store.newItems)
+            .filter { item in !due.contains(where: { $0.id == item.id }) }
         self.batch = Array((due + fresh).prefix(batchSize))
     }
 

@@ -31,6 +31,10 @@ final class LearningStore {
     private let modelContext: ModelContext
     private let userProfile: UserProfile
     private var progressByItemId: [String: VocabProgress]
+    /// Kept for on-demand access to content that isn't hydrated into
+    /// `items` (reading passages) or that's cheap to re-derive from here
+    /// rather than duplicate (writing prompts).
+    private let contentStore: ContentStore
 
     init(
         contentStore: ContentStore,
@@ -40,6 +44,7 @@ final class LearningStore {
     ) {
         self.modelContext = modelContext
         self.baseKnownWords = baseKnownWords
+        self.contentStore = contentStore
 
         var profileDescriptor = FetchDescriptor<UserProfile>()
         profileDescriptor.fetchLimit = 1
@@ -69,6 +74,7 @@ final class LearningStore {
                     exampleTarget: vocab.exampleTarget,
                     exampleGloss: vocab.exampleGloss,
                     frequencyRank: vocab.frequencyRank,
+                    awl: vocab.awl,
                     schedule: progressLookup[vocab.id]?.schedule ?? ScheduleState()
                 )
             }
@@ -91,6 +97,15 @@ final class LearningStore {
         try? modelContext.save()
     }
 
+    var examType: String { userProfile.examType }
+    var examTarget: String { userProfile.examTarget }
+
+    func setExamGoal(type: String, target: String) {
+        userProfile.examType = type
+        userProfile.examTarget = target
+        try? modelContext.save()
+    }
+
     // MARK: Derived metrics
 
     var recallAccuracy: Double {
@@ -107,6 +122,11 @@ final class LearningStore {
     var newItems: [LearningItem] {
         items.filter { $0.schedule.isNew }
     }
+
+    /// Due/new items restricted to the Academic Word List, for the
+    /// dedicated AWL practice track.
+    var awlDueItems: [LearningItem] { dueItems.filter(\.awl) }
+    var awlNewItems: [LearningItem] { newItems.filter(\.awl) }
 
     // MARK: Coverage / comprehensible-input support (strategy §1.4)
 
@@ -129,7 +149,7 @@ final class LearningStore {
 
     /// The graded passage currently best matched to the learner's coverage.
     var recommendedPassage: ReadingPassage? {
-        CoverageEngine.selectPassage(from: PassageLibrary.all(), known: knownWords)
+        CoverageEngine.selectPassage(from: contentStore.reading, known: knownWords)
     }
 
     // MARK: Mutations

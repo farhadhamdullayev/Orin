@@ -20,6 +20,8 @@ struct LearningItem: Identifiable, Equatable {
     let exampleGloss: [String: String]
     /// Corpus frequency rank (lower = more frequent). Drives curriculum order.
     let frequencyRank: Int
+    /// Academic Word List flag — lets a session be filtered to AWL-only.
+    let awl: Bool
 
     // MARK: Spaced-repetition memory state (see FSRSScheduler)
     var schedule: ScheduleState = .init()

@@ -13,6 +13,10 @@ struct VocabItem: Identifiable, Codable, Equatable {
     /// Language code ("az","hi","zh","es","pt","id","ar","vi","ko") → translated gloss.
     let gloss: [String: String]
     let exampleGloss: [String: String]
+    /// Academic Word List flag — AWL words are full vocab items (same
+    /// schedule, same gloss/example shape), just filterable for the
+    /// dedicated AWL practice track.
+    let awl: Bool
 }
 
 /// Loads and holds the full static content catalog in memory. One instance
@@ -23,12 +27,16 @@ final class ContentStore {
     private(set) var grammar: [GrammarTopic]
     private(set) var listening: [ListeningTopic]
     private(set) var visualVocab: [VisualCategory]
+    private(set) var reading: [ReadingPassage]
+    private(set) var writingPrompts: [WritingPrompt]
 
     init() {
         vocab = ContentStore.loadJSON("vocab", as: [VocabItem].self) ?? []
         grammar = ContentStore.loadGrammar()
         listening = ContentStore.loadListening()
         visualVocab = ContentStore.loadVisualVocab()
+        reading = ContentStore.loadReading()
+        writingPrompts = ContentStore.loadWritingPrompts()
     }
 
     /// Decodes `<name>.json` from the bundle, checking the `Content`
