@@ -40,9 +40,7 @@ struct WritingTaskView: View {
 
     var body: some View {
         if showFeedback {
-            WritingFeedbackView(prompt: prompt, text: text) {
-                showFeedback = false
-            }
+            WritingFeedbackView(prompt: prompt, text: text)
         } else {
             VStack(alignment: .leading, spacing: 12) {
                 Text(prompt.prompt)
@@ -89,7 +87,6 @@ struct WritingTaskView: View {
 private struct WritingFeedbackView: View {
     let prompt: WritingPrompt
     let text: String
-    let onTryAnother: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     private static let linkingWords = [
@@ -159,14 +156,13 @@ private struct WritingFeedbackView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
-                VStack(spacing: 12) {
-                    Button("Başqa tapşırıq") { onTryAnother() }
-                        .buttonStyle(.borderedProminent)
-                        .frame(maxWidth: .infinity)
-                    Button("Siyahıya qayıt") { dismiss() }
-                        .buttonStyle(.bordered)
-                        .frame(maxWidth: .infinity)
-                }
+                // Both actions return to the prompt list (so "another task" is
+                // an actual DIFFERENT prompt, not the same one with old text) —
+                // matches the web app's own WritingFeedback() behaviour, where
+                // "again" also routes back to WritingList(), not the same task.
+                Button("Başqa tapşırıq seç") { dismiss() }
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity)
             }
             .padding()
         }

@@ -453,6 +453,37 @@ def extract_writing_prompts(html: str):
     return prompts
 
 
+PLACEMENT_RE = re.compile(
+    r'\{w:"((?:[^"\\]|\\.)*)",band:(\d+),a:"((?:[^"\\]|\\.)*)",o:\[((?:[^\]\\]|\\.)*)\]\}'
+)
+
+
+def extract_placement_bank(html: str):
+    """PLACEMENT_BANK: word + CEFR band + correct Azerbaijani translation +
+    3 distractor options. Used for the native Mock Test's vocabulary section
+    (word -> correct-translation MCQ) — not surfaced anywhere in the web app
+    itself beyond internal level-placement, but the data is real and vetted."""
+    marker = "const PLACEMENT_BANK=["
+    start = html.index(marker)
+    open_idx = start + len(marker) - 1
+    close_idx = find_match(html, open_idx)
+    chunk = html[open_idx : close_idx + 1]
+
+    questions = []
+    for i, m in enumerate(PLACEMENT_RE.finditer(chunk)):
+        word, band, answer, opts_raw = m.groups()
+        questions.append(
+            {
+                "id": f"pl_{i}",
+                "word": word,
+                "band": int(band),
+                "correctAnswer": answer,
+                "options": OPT_RE.findall(opts_raw),
+            }
+        )
+    return questions
+
+
 def write_json(name: str, data):
     os.makedirs(OUT_DIR, exist_ok=True)
     path = os.path.join(OUT_DIR, name)
@@ -535,6 +566,13 @@ def main():
     if len(writing) < 20:
         raise SystemExit(f"Sanity check failed: only {len(writing)} prompts parsed (expected ~120) — aborting.")
     write_json("writing_prompts.json", writing)
+
+    print("== placement_bank.json ==")
+    placement = extract_placement_bank(html)
+    print(f"Parsed {len(placement)} placement/vocabulary MCQ questions.")
+    if len(placement) < 50:
+        raise SystemExit(f"Sanity check failed: only {len(placement)} questions parsed — aborting.")
+    write_json("placement_bank.json", placement)
 
     print("Content export complete.")
 

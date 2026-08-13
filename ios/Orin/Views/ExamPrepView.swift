@@ -13,6 +13,15 @@ struct ExamPrepView: View {
 
     var body: some View {
         Form {
+            Section {
+                NavigationLink {
+                    MockTestView()
+                } label: {
+                    Label("Sınaq İmtahanına başla", systemImage: "flag.checkered")
+                        .font(.headline)
+                }
+            }
+
             Section("Hədəf") {
                 Picker("İmtahan", selection: $examType) {
                     Text("Seçilməyib").tag("")
