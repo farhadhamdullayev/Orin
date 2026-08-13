@@ -25,6 +25,11 @@ struct OrinTabView: View {
             .tabItem { Label("İrəliləyiş", systemImage: "chart.bar.fill") }
 
             NavigationStack {
+                SocialHubView()
+            }
+            .tabItem { Label("Sosial", systemImage: "person.2.fill") }
+
+            NavigationStack {
                 SettingsView()
                     .navigationTitle("Ayarlar")
                     .navigationBarTitleDisplayMode(.inline)

@@ -21,6 +21,11 @@ final class UserProfile {
     /// content the app validates or unlocks anything on.
     var examType: String
     var examTarget: String
+    /// "" = social features (Duel/Friends/Leaderboard) not configured yet —
+    /// no VPS/domain exists at Phase 4 start. Set by the learner in Settings
+    /// once `Orin/server/` is deployed (e.g. "https://api.example.com") or
+    /// pointed at a local dev instance during testing.
+    var serverBaseURL: String
 
     init(
         displayName: String = "",
@@ -34,7 +39,8 @@ final class UserProfile {
         pointsAtDayStart: Int = 0,
         streakAtDayStart: Int = 0,
         examType: String = "",
-        examTarget: String = ""
+        examTarget: String = "",
+        serverBaseURL: String = ""
     ) {
         self.displayName = displayName
         self.deviceId = deviceId
@@ -48,5 +54,6 @@ final class UserProfile {
         self.streakAtDayStart = streakAtDayStart
         self.examType = examType
         self.examTarget = examTarget
+        self.serverBaseURL = serverBaseURL
     }
 }

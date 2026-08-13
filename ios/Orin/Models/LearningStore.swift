@@ -106,6 +106,20 @@ final class LearningStore {
         try? modelContext.save()
     }
 
+    var serverBaseURL: String { userProfile.serverBaseURL }
+    var deviceId: String { userProfile.deviceId.uuidString }
+    var displayName: String { userProfile.displayName }
+
+    func setServerBaseURL(_ url: String) {
+        userProfile.serverBaseURL = url
+        try? modelContext.save()
+    }
+
+    func setDisplayName(_ name: String) {
+        userProfile.displayName = name
+        try? modelContext.save()
+    }
+
     // MARK: Derived metrics
 
     var recallAccuracy: Double {
@@ -150,6 +164,19 @@ final class LearningStore {
     /// The graded passage currently best matched to the learner's coverage.
     var recommendedPassage: ReadingPassage? {
         CoverageEngine.selectPassage(from: contentStore.reading, known: knownWords)
+    }
+
+    /// Rough CEFR band estimate from known word families, using the same
+    /// frequency thresholds as `server/export_catalog.py`'s `WORD_BANDS` —
+    /// keeps the native client's Duel band selection consistent with how
+    /// the server buckets its own word/grammar catalog.
+    var estimatedBand: String {
+        let thresholds: [(String, Int)] = [
+            ("Pre-A1", 0), ("A1", 700), ("A2", 1500), ("B1", 2500), ("B2", 3250), ("C1", 4000), ("C2", 4800),
+        ]
+        var band = thresholds[0].0
+        for (name, threshold) in thresholds where estimatedKnownFamilies >= threshold { band = name }
+        return band
     }
 
     // MARK: Mutations
