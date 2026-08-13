@@ -30,6 +30,7 @@ final class ContentStore {
     private(set) var reading: [ReadingPassage]
     private(set) var writingPrompts: [WritingPrompt]
     private(set) var placementBank: [PlacementQuestion]
+    private(set) var readingGlossary: [String: String]
 
     init() {
         vocab = ContentStore.loadJSON("vocab", as: [VocabItem].self) ?? []
@@ -39,6 +40,7 @@ final class ContentStore {
         reading = ContentStore.loadReading()
         writingPrompts = ContentStore.loadWritingPrompts()
         placementBank = ContentStore.loadPlacementBank()
+        readingGlossary = ContentStore.loadReadingGlossary()
     }
 
     /// Decodes `<name>.json` from the bundle, checking the `Content`

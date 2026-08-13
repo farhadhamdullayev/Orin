@@ -5,11 +5,11 @@ import SwiftUI
 /// This makes the strategy's 95%/98% thresholds visible and concrete.
 ///
 /// Every word is individually tappable (via `FlowLayout`) — tapping shows its
-/// Azerbaijani translation in a card below the passage, looked up against the
-/// same 3871-word vocab catalog the rest of the app uses. Not every English
-/// word in a passage is guaranteed to be in that catalog (passages are free
-/// text; the catalog is curated), so a miss shows an honest "not found"
-/// message rather than nothing.
+/// Azerbaijani translation in a card below the passage. Lookup order: the
+/// 3871-word vocab catalog (direct + inflection-suffix match), then
+/// `ContentStore.readingGlossary` — a supplementary word list covering every
+/// word across all 1200 passages, generated once so every tap resolves to a
+/// translation (explicit product requirement — no gaps).
 struct ReadingView: View {
     let passage: ReadingPassage
     let known: Set<String>
@@ -114,9 +114,12 @@ struct ReadingView: View {
 
     /// The catalog stores only base/dictionary forms ("walk"), but passage
     /// text naturally uses inflected forms ("walked"/"walking"/"walks") —
-    /// try common regular-suffix strips before giving up. Doesn't catch
-    /// irregular forms (went/ate) or words genuinely outside the 3871-word
-    /// catalog; those honestly report "not found" rather than guessing.
+    /// try common regular-suffix strips before giving up on the vocab
+    /// catalog. Anything still unresolved falls through to
+    /// `contentStore.readingGlossary` — a supplementary word list covering
+    /// every word across all 1200 passages that isn't in the curated
+    /// catalog (built once via `tools/build_reading_glossary.py`), so every
+    /// tappable word resolves to a translation.
     private func lookupGloss(for word: String) -> [String: String]? {
         if let gloss = vocabLookup[word] { return gloss }
         var candidates: [String] = []
@@ -134,6 +137,10 @@ struct ReadingView: View {
         if word.hasSuffix("s") { candidates.append(String(word.dropLast(1))) }
         for candidate in candidates {
             if let gloss = vocabLookup[candidate] { return gloss }
+        }
+        if let translation = contentStore.readingGlossary[word] { return ["az": translation] }
+        for candidate in candidates {
+            if let translation = contentStore.readingGlossary[candidate] { return ["az": translation] }
         }
         return nil
     }
