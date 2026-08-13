@@ -112,12 +112,38 @@ struct ReadingView: View {
         }
     }
 
+    /// The catalog stores only base/dictionary forms ("walk"), but passage
+    /// text naturally uses inflected forms ("walked"/"walking"/"walks") —
+    /// try common regular-suffix strips before giving up. Doesn't catch
+    /// irregular forms (went/ate) or words genuinely outside the 3871-word
+    /// catalog; those honestly report "not found" rather than guessing.
+    private func lookupGloss(for word: String) -> [String: String]? {
+        if let gloss = vocabLookup[word] { return gloss }
+        var candidates: [String] = []
+        if word.hasSuffix("ies") { candidates.append(String(word.dropLast(3)) + "y") }
+        if word.hasSuffix("ing") {
+            let stem = String(word.dropLast(3))
+            candidates.append(stem)
+            candidates.append(stem + "e")
+        }
+        if word.hasSuffix("ed") {
+            candidates.append(String(word.dropLast(2)))
+            candidates.append(String(word.dropLast(1)))
+        }
+        if word.hasSuffix("es") { candidates.append(String(word.dropLast(2))) }
+        if word.hasSuffix("s") { candidates.append(String(word.dropLast(1))) }
+        for candidate in candidates {
+            if let gloss = vocabLookup[candidate] { return gloss }
+        }
+        return nil
+    }
+
     private func translationCard(for word: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "text.bubble.fill").foregroundStyle(Color.accentColor)
             VStack(alignment: .leading, spacing: 2) {
                 Text(word).font(.subheadline.weight(.semibold))
-                if let gloss = vocabLookup[word] {
+                if let gloss = lookupGloss(for: word) {
                     Text(localization.text(gloss, fallback: gloss["az"] ?? ""))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
