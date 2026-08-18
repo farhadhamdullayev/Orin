@@ -220,4 +220,44 @@ final class LearningStore {
             progressByItemId[itemId] = row
         }
     }
+
+    /// Wipes all learning data — every `VocabProgress` row (FSRS schedules),
+    /// every `StarredWord`, and the learning-relevant fields on the
+    /// singleton `UserProfile` (points/streak/day counter/goal/milestones).
+    /// Deliberately leaves `uiLanguage` and `serverBaseURL` alone — those are
+    /// app configuration, not personal learning data, and re-entering them
+    /// would just be friction. `UserProfile` is reset in place (its fields
+    /// cleared), not deleted+recreated, since other code already holds a
+    /// reference to this exact object.
+    func resetAllData() {
+        for progress in progressByItemId.values {
+            modelContext.delete(progress)
+        }
+        progressByItemId.removeAll()
+
+        let starred = (try? modelContext.fetch(FetchDescriptor<StarredWord>())) ?? []
+        for word in starred {
+            modelContext.delete(word)
+        }
+
+        userProfile.displayName = ""
+        userProfile.points = 0
+        userProfile.streak = 0
+        userProfile.virtualDay = 0
+        userProfile.learningGoal = ""
+        userProfile.milestonesSeen = []
+        userProfile.pointsAtDayStart = 0
+        userProfile.streakAtDayStart = 0
+        userProfile.examType = ""
+        userProfile.examTarget = ""
+        virtualDay = 0
+        firstAttempts = 0
+        firstAttemptSuccesses = 0
+
+        for i in items.indices {
+            items[i].schedule = ScheduleState()
+        }
+
+        try? modelContext.save()
+    }
 }

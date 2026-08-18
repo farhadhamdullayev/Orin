@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var serverURLDraft: String = ""
     @State private var displayNameDraft: String = ""
     @State private var registerStatus: String?
+    @State private var showResetConfirmation = false
 
     var body: some View {
         Form {
@@ -56,11 +57,33 @@ struct SettingsView: View {
             } footer: {
                 Text("VPS deploy olunduqdan sonra buraya ünvanı yazın (məs. https://api.orinapp.com). Boş qalarsa Sosial tab-ı deaktiv görünür.")
             }
+
+            Section {
+                Button("Datamı sil", role: .destructive) {
+                    showResetConfirmation = true
+                }
+            } footer: {
+                Text("Bütün öyrənmə proqresini (xal, təkrar cədvəli, seçilmiş sözlər, hədəflər) həmişəlik silir. Dil seçimi və server ünvanı qalır.")
+            }
         }
         .onAppear {
             goalDraft = store.learningGoal
             serverURLDraft = store.serverBaseURL
             displayNameDraft = store.displayName
+        }
+        .confirmationDialog(
+            "Bütün datanı silmək istədiyinizə əminsiniz?",
+            isPresented: $showResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Sil", role: .destructive) {
+                store.resetAllData()
+                goalDraft = ""
+                displayNameDraft = ""
+            }
+            Button("Ləğv et", role: .cancel) {}
+        } message: {
+            Text("Bu geri qaytarıla bilməz.")
         }
     }
 
