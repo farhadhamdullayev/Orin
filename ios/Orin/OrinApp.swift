@@ -53,12 +53,12 @@ struct OrinApp: App {
     /// stable ahead of a real release.
     private static func makeModelContainer() -> ModelContainer {
         do {
-            return try ModelContainer(for: VocabProgress.self, UserProfile.self)
+            return try ModelContainer(for: VocabProgress.self, UserProfile.self, StarredWord.self)
         } catch {
             print("ModelContainer init failed (\(error)) — deleting on-disk store and retrying fresh.")
             deleteDefaultStore()
             do {
-                return try ModelContainer(for: VocabProgress.self, UserProfile.self)
+                return try ModelContainer(for: VocabProgress.self, UserProfile.self, StarredWord.self)
             } catch {
                 fatalError("Failed to initialize SwiftData ModelContainer even after a fresh store: \(error)")
             }

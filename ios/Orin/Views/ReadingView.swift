@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Comprehensible-input reader. Shows the graded passage the CoverageEngine
 /// picked for the learner, with the live coverage % and unknown words marked.
@@ -16,8 +17,13 @@ struct ReadingView: View {
 
     @Environment(ContentStore.self) private var contentStore
     @Environment(LocalizationStore.self) private var localization
+    @Environment(\.modelContext) private var modelContext
     @State private var vocabLookup: [String: [String: String]] = [:]
     @State private var selectedWord: String?
+    /// Cached from SwiftData once (not a live `@Query`, since the star
+    /// button needs to toggle a single word without re-fetching the whole
+    /// table on every tap) — kept in sync manually in `toggleStar`.
+    @State private var starredWords: Set<String> = []
 
     private var coverage: Double { CoverageEngine.coverage(of: passage.text, known: known) }
     private var band: CoverageEngine.Band { CoverageEngine.band(forCoverage: coverage) }
@@ -80,7 +86,27 @@ struct ReadingView: View {
                 if lookup[key] == nil { lookup[key] = item.gloss }
             }
             vocabLookup = lookup
+
+            let starred = (try? modelContext.fetch(FetchDescriptor<StarredWord>())) ?? []
+            starredWords = Set(starred.map(\.word))
         }
+    }
+
+    /// Adds/removes `word` from the personal review list — same star button
+    /// does both, matching how it's removed later from `StarredWordsView`
+    /// once the learner feels they know it.
+    private func toggleStar(word: String, translation: String) {
+        if starredWords.contains(word) {
+            let descriptor = FetchDescriptor<StarredWord>(predicate: #Predicate { $0.word == word })
+            if let existing = try? modelContext.fetch(descriptor).first {
+                modelContext.delete(existing)
+            }
+            starredWords.remove(word)
+        } else {
+            modelContext.insert(StarredWord(word: word, translation: translation))
+            starredWords.insert(word)
+        }
+        try? modelContext.save()
     }
 
     private var coverageBadge: some View {
@@ -146,12 +172,14 @@ struct ReadingView: View {
     }
 
     private func translationCard(for word: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        let gloss = lookupGloss(for: word)
+        let translation = gloss.map { localization.text($0, fallback: $0["az"] ?? "") }
+        return HStack(alignment: .top, spacing: 10) {
             Image(systemName: "text.bubble.fill").foregroundStyle(Color.accentColor)
             VStack(alignment: .leading, spacing: 2) {
                 Text(word).font(.subheadline.weight(.semibold))
-                if let gloss = lookupGloss(for: word) {
-                    Text(localization.text(gloss, fallback: gloss["az"] ?? ""))
+                if let translation {
+                    Text(translation)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } else {
@@ -161,6 +189,15 @@ struct ReadingView: View {
                 }
             }
             Spacer()
+            if let translation {
+                Button {
+                    toggleStar(word: word, translation: translation)
+                } label: {
+                    Image(systemName: starredWords.contains(word) ? "star.fill" : "star")
+                        .foregroundStyle(starredWords.contains(word) ? .yellow : .secondary)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding()
         .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))

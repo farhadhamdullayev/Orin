@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// "Practice" tab — entry hub for the content modules that don't have their
 /// own spaced-repetition schedule (Grammar/Listening/Visual vocab practice
@@ -8,6 +9,7 @@ import SwiftUI
 /// navigation guidance).
 struct PracticeHubView: View {
     @Environment(ContentStore.self) private var contentStore
+    @Query private var starredWords: [StarredWord]
 
     var body: some View {
         ScrollView {
@@ -53,6 +55,17 @@ struct PracticeHubView: View {
                         title: "Oxu",
                         subtitle: "\(contentStore.reading.count) mətn",
                         tint: .teal
+                    )
+                }
+
+                NavigationLink {
+                    StarredWordsView()
+                } label: {
+                    ModuleCard(
+                        icon: "star.fill",
+                        title: "Ulduzlu sözlər",
+                        subtitle: starredWords.isEmpty ? "Oxuyarkən söz ulduzlayın" : "\(starredWords.count) söz",
+                        tint: .yellow
                     )
                 }
 
