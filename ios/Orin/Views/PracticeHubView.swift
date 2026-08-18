@@ -63,7 +63,7 @@ struct PracticeHubView: View {
                 } label: {
                     ModuleCard(
                         icon: "star.fill",
-                        title: "Ulduzlu sözlər",
+                        title: "Seçilmiş sözlər",
                         subtitle: starredWords.isEmpty ? "Oxuyarkən söz ulduzlayın" : "\(starredWords.count) söz",
                         tint: .yellow
                     )

@@ -23,7 +23,7 @@ struct StarredWordsView: View {
                 listView
             }
         }
-        .navigationTitle("Ulduzlu sözlər (\(starred.count))")
+        .navigationTitle("Seçilmiş sözlər (\(starred.count))")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -33,7 +33,7 @@ struct StarredWordsView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         Image(systemName: "star").font(.system(size: 40)).foregroundStyle(.secondary)
-                        Text("Hələ ulduzlu söz yoxdur")
+                        Text("Hələ seçilmiş söz yoxdur")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Text("Oxu bölməsində bir sözə toxunub tərcüməsini görəndə, yanındakı ⭐ ilə bura əlavə edə bilərsiniz.")
